@@ -19,4 +19,12 @@ namespace BookAuthor.Api.Model.DTO
         public string Name { get; set; }
         public DateTime BirthDay { get; set; }
     }
+
+    public class AuthorDtoForUpdation
+    {
+        [Required]
+        [StringLength(maximumLength: 100, ErrorMessage = "Name is over the limit")]
+        public string Name { get; set; }
+        public DateTime BirthDay { get; set; }
+    }
 }

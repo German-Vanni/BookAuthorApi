@@ -7,10 +7,10 @@ namespace BookAuthor.Api.Model.DTO
         public int Id { get; set; }
         [Required]
         public string Title { get; set; }
-        public string ISBN10 { get; set; }
-        public string ISBN13 { get; set; }
+        public string Isbn10 { get; set; }
+        public string Isbn13 { get; set; }
         public int AuthorId { get; set; }
-        public Author Author { get; set; }
+        public AuthorDto Author { get; set; }
     }
 
     public class BookDtoForCreation
@@ -18,8 +18,18 @@ namespace BookAuthor.Api.Model.DTO
         [Required]
         [StringLength(maximumLength: 32768)]
         public string Title { get; set; }
-        public string ISBN10 { get; set; }
-        public string ISBN13 { get; set; }
+        public string Isbn10 { get; set; }
+        public string Isbn13 { get; set; }
+        public int AuthorId { get; set; }
+    }
+
+    public class BookDtoForUpdation
+    {
+        [Required]
+        [StringLength(maximumLength: 32768)]
+        public string Title { get; set; }
+        public string Isbn10 { get; set; }
+        public string Isbn13 { get; set; }
         public int AuthorId { get; set; }
     }
 }

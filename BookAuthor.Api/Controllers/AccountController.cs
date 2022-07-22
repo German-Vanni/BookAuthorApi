@@ -34,7 +34,8 @@ namespace BookAuthor.Api.Controllers
         [HttpPost("register")]
         [ProducesResponseType(StatusCodes.Status202Accepted)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Register([FromBody] UserDtoForCreation userDto)
         {
             if (!ModelState.IsValid)
@@ -60,12 +61,16 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                throw;
+                //logging
+                return StatusCode(500, "Something went wrong in our end :(");
             }
         }
 
         [HttpPost("login")]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Login([FromBody] UserDtoForLogin userDto)
         {
             if (!ModelState.IsValid)
@@ -84,9 +89,8 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                return Problem("Something went wrong in our end :(");
-                throw;
+                //logging
+                return StatusCode(500,"Something went wrong in our end :(");
             }
         }
 

@@ -22,32 +22,32 @@ namespace BookAuthor.Api.DataAccess
                 {
                     Id = 1,
                     Title = "Title 1",
-                    ISBN10 = "4242421421",
-                    ISBN13 = "4242421421123",
+                    Isbn10 = "4242421421",
+                    Isbn13 = "4242421421123",
                     AuthorId = 1
                 },
                 new Book
                 {
                     Id = 2,
                     Title = "Title 2",
-                    ISBN10 = "4242421421",
-                    ISBN13 = "4242421421123",
+                    Isbn10 = "4242421421",
+                    Isbn13 = "4242421421123",
                     AuthorId = 1
                 },
                 new Book
                 {
                     Id = 3,
                     Title = "Title 3",
-                    ISBN10 = "4242421421",
-                    ISBN13 = "4242421421123",
+                    Isbn10 = "4242421421",
+                    Isbn13 = "4242421421123",
                     AuthorId = 2
                 },
                 new Book
                 {
                     Id = 4,
                     Title = "Title 4",
-                    ISBN10 = "4242421421",
-                    ISBN13 = "4242421421123",
+                    Isbn10 = "4242421421",
+                    Isbn13 = "4242421421123",
                     AuthorId = 3
                 });
             builder.Entity<Author>().HasData(

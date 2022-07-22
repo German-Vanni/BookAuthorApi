@@ -8,12 +8,16 @@ namespace BookAuthor.Api.Configurations
     {
         public MapperInit()
         {
-            CreateMap<Book, BookDto>().ReverseMap().MaxDepth(1);
-            CreateMap<Book, BookDtoForCreation>().ReverseMap();
-            CreateMap<Author, AuthorDto>().ReverseMap().MaxDepth(1);
+            CreateMap<Author, AuthorDto>().ReverseMap();
             CreateMap<Author, AuthorDtoForCreation>().ReverseMap();
+            CreateMap<Author, AuthorDtoForUpdation>().ReverseMap();
             CreateMap<UserDtoForCreation, ApiUser>();
-            CreateMap<UserDto, ApiUser>().ReverseMap(); ;
+            CreateMap<UserDto, ApiUser>().ReverseMap(); 
+            CreateMap<Book, BookDto>().ReverseMap();
+            CreateMap<Book, BookDtoForCreation>().ReverseMap();
+            CreateMap<Book, BookDtoForUpdation>().ReverseMap();
+
+
 
         }
     }
