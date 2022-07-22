@@ -12,6 +12,9 @@ namespace BookAuthor.Api.Configurations
             CreateMap<Book, BookDtoForCreation>().ReverseMap();
             CreateMap<Author, AuthorDto>().ReverseMap().MaxDepth(1);
             CreateMap<Author, AuthorDtoForCreation>().ReverseMap();
+            CreateMap<UserDtoForCreation, ApiUser>();
+            CreateMap<UserDto, ApiUser>().ReverseMap(); ;
+
         }
     }
 }

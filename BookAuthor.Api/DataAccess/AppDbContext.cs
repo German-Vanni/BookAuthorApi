@@ -1,9 +1,11 @@
-﻿using BookAuthor.Api.Model;
+﻿using BookAuthor.Api.Configurations.EF;
+using BookAuthor.Api.Model;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace BookAuthor.Api.DataAccess
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<ApiUser>
     {
         public AppDbContext(DbContextOptions opt) : base(opt)
         {
@@ -12,6 +14,9 @@ namespace BookAuthor.Api.DataAccess
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            base.OnModelCreating(builder);
+            builder.ApplyConfiguration(new RoleEntityConfiguration());
+
             builder.Entity<Book>().HasData(
                 new Book
                 {

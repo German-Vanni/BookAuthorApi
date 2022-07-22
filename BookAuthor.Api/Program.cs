@@ -1,6 +1,7 @@
 using BookAuthor.Api.Configurations;
 using BookAuthor.Api.DataAccess;
 using BookAuthor.Api.DataAccess.Repository.UnitOfWork;
+using BookAuthor.Api.Model;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
@@ -16,25 +17,31 @@ namespace BookAuthor.Api
             ConfigurationManager Configuration = builder.Configuration;
 
             // Add services to the container.
-            builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
-            builder.Services.AddCors(options =>
-            {
+            builder.Services.AddApiServices();
+
+            builder.Services.AddDbContext<AppDbContext>(opt =>
+                opt.UseSqlServer(Configuration.GetConnectionString("SqlServerCS"))
+            );
+
+            builder.Services.AddAuthentication();
+            builder.Services.ConfigureIdentity();
+            builder.Services.ConfigureJwtAuthentication(Configuration);
+
+            builder.Services.AddCors(options => {
                 options.AddPolicy(name: "AllowAnyOrigin",
                                   policy => {
                                       policy.AllowAnyOrigin();
                                       policy.AllowAnyMethod();
                                   });
             });
-            builder.Services.AddAutoMapper(typeof(MapperInit));
-            builder.Services.AddDbContext<AppDbContext>(opt =>
-                opt.UseSqlServer(Configuration.GetConnectionString("SqlServerCS"))
-            );
+            
 
             builder.Services.AddControllers().AddNewtonsoftJson(op =>
                 op.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
                 );
 
             builder.Services.AddSwaggerGen();
+            
 
             var app = builder.Build();
 
@@ -50,6 +57,7 @@ namespace BookAuthor.Api
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
 
