@@ -13,22 +13,25 @@ namespace BookAuthor.Api.Controllers
     [ApiController]
     public class AccountController : ControllerBase
     {
-        //private readonly SignInManager<ApiUser> _signInManager;
         private readonly UserManager<ApiUser> _userManager;
+        private readonly ILogger<BookController> _logger;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IAuthManager _authManager;
 
         public AccountController(
+            ILogger<BookController> logger,
             IUnitOfWork unitOfWork,
             IMapper mapper,
              IAuthManager authManager, 
-            UserManager<ApiUser> userManager)
+            UserManager<ApiUser> userManager
+            )
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _authManager = authManager;
             _userManager = userManager;
+            _logger = logger;
         }
 
         [HttpPost("register")]
@@ -62,7 +65,8 @@ namespace BookAuthor.Api.Controllers
             catch (Exception ex)
             {
                 //logging
-                return StatusCode(500, "Something went wrong in our end :(");
+                _logger.LogError(ex.Message);
+                return StatusCode(500, "Internal Server Error. Please try again later");
             }
         }
 
@@ -90,7 +94,8 @@ namespace BookAuthor.Api.Controllers
             catch (Exception ex)
             {
                 //logging
-                return StatusCode(500,"Something went wrong in our end :(");
+                _logger.LogError(ex.Message);
+                return StatusCode(500, "Internal Server Error. Please try again later");
             }
         }
 

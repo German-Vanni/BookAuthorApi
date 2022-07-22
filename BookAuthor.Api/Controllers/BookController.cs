@@ -12,13 +12,17 @@ namespace BookAuthor.Api.Controllers
     [ApiController]
     public class BookController : ControllerBase
     {
+        private readonly ILogger<BookController> _logger;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public BookController(IUnitOfWork unitOfWork,IMapper mapper)
+        public BookController(IUnitOfWork unitOfWork,
+            IMapper mapper, 
+            ILogger<BookController> logger)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -28,13 +32,14 @@ namespace BookAuthor.Api.Controllers
         {
             try
             {
+                _logger.Log(LogLevel.Error, "TESTING MESSAGE");
                 var books = await _unitOfWork.Books.GetAll();
                 var bookDto_list = _mapper.Map<IEnumerable<Book>, IEnumerable<BookDto>>(books);
                 return Ok(bookDto_list);
             }
             catch(Exception ex)
             {
-                //logging
+                _logger.LogError(ex.Message);
                 return StatusCode(500, ex.Message);
             }
         }
@@ -57,6 +62,7 @@ namespace BookAuthor.Api.Controllers
             catch (Exception ex)
             {
                 //logging
+                _logger.LogError(ex.Message);
                 return StatusCode(500, ex.Message);
             }
         }
@@ -84,6 +90,7 @@ namespace BookAuthor.Api.Controllers
             catch(Exception ex)
             {
                 //logging
+                _logger.LogError(ex.Message);
                 return StatusCode(500, "Internal Server Error. Please try again later");
             }
         }
@@ -114,6 +121,7 @@ namespace BookAuthor.Api.Controllers
             catch (Exception ex)
             {
                 //logging
+                _logger.LogError(ex.Message);
                 return StatusCode(500, "Internal Server Error. Please try again later");
             }
         }
@@ -142,6 +150,7 @@ namespace BookAuthor.Api.Controllers
             catch (Exception ex)
             {
                 //logging
+                _logger.LogError(ex.Message);
                 return StatusCode(500, ex.Message);
             }
         }

@@ -12,11 +12,13 @@ namespace BookAuthor.Api.Controllers
     [ApiController]
     public class AuthorController : ControllerBase
     {
+        private readonly ILogger _logger;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public AuthorController(IUnitOfWork unitOfWork, IMapper mapper)
+        public AuthorController(IUnitOfWork unitOfWork, IMapper mapper, ILogger logger)
         {
+            _logger = logger;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
@@ -35,6 +37,7 @@ namespace BookAuthor.Api.Controllers
             catch (Exception ex)
             {
                 //logging
+                _logger.LogError(ex.Message);
                 return StatusCode(500, ex.Message);
             }
         }
@@ -57,6 +60,7 @@ namespace BookAuthor.Api.Controllers
             catch (Exception ex)
             {
                 //logging
+                _logger.LogError(ex.Message);
                 return StatusCode(500, ex.Message);
             }
         }
@@ -84,6 +88,7 @@ namespace BookAuthor.Api.Controllers
             catch(Exception ex)
             {
                 //logging
+                _logger.LogError(ex.Message);
                 return StatusCode(500, "Internal Server Error. Please try again later");
             }
         }
@@ -114,6 +119,7 @@ namespace BookAuthor.Api.Controllers
             catch (Exception ex)
             {
                 //logging
+                _logger.LogError(ex.Message);
                 return StatusCode(500, "Internal Server Error. Please try again later");
             }
         }
@@ -142,7 +148,8 @@ namespace BookAuthor.Api.Controllers
             catch (Exception ex)
             {
                 //logging
-                return StatusCode(500, ex.Message);
+                _logger.LogError(ex.Message);
+                return StatusCode(500, "Internal Server Error. Please try again later");
             }
         }
     }
