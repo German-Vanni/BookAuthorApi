@@ -1,6 +1,8 @@
 ﻿using BookAuthor.Api.DataAccess.Repository.Interface;
+using BookAuthor.Api.Model.Paging;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using X.PagedList;
 
 namespace BookAuthor.Api.DataAccess.Repository
 {
@@ -58,7 +60,7 @@ namespace BookAuthor.Api.DataAccess.Repository
             return await query.AsNoTracking().FirstOrDefaultAsync();
         }
 
-        public async Task<IEnumerable<T>> GetAll(Expression<Func<T, bool>> expression = null,  List<string> includes = null)
+        public async Task<IEnumerable<T>> GetMany(Expression<Func<T, bool>> expression = null,  List<string> includes = null)
         {
             IQueryable<T> query = _dbSet;
             if(expression != null)
@@ -75,6 +77,23 @@ namespace BookAuthor.Api.DataAccess.Repository
             
 
             return await query.AsNoTracking().ToListAsync();
+        }
+
+        public async Task<IPagedList<T>> GetAll(RequestParameters requestParameters, List<string> includes = null)
+        {
+
+            IQueryable<T> query = _dbSet;
+
+            if (includes != null)
+            {
+                foreach (string i in includes)
+                {
+                    query = query.Include(i);
+                }
+            }
+
+
+            return await query.AsNoTracking().ToPagedListAsync(requestParameters.PageNumber, requestParameters.PageSize);
         }
 
         public void Update(T entity)

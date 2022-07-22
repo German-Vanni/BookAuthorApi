@@ -2,6 +2,7 @@
 using BookAuthor.Api.DataAccess.Repository.UnitOfWork;
 using BookAuthor.Api.Model;
 using BookAuthor.Api.Model.DTO;
+using BookAuthor.Api.Model.Paging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -26,11 +27,11 @@ namespace BookAuthor.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpGet]
-        public async Task<IActionResult> GetAuthors()
+        public async Task<IActionResult> GetAuthors([FromQuery] RequestParameters requestParameters)
         {
             try
             {
-                var authors = await _unitOfWork.Authors.GetAll();
+                var authors = await _unitOfWork.Authors.GetAll(requestParameters);
                 var authorsDtos = _mapper.Map<IEnumerable<Author>, IEnumerable<AuthorDto>>(authors);
                 return Ok(authorsDtos);
             }

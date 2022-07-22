@@ -1,4 +1,6 @@
-﻿using System.Linq.Expressions;
+﻿using BookAuthor.Api.Model.Paging;
+using System.Linq.Expressions;
+using X.PagedList;
 
 namespace BookAuthor.Api.DataAccess.Repository.Interface
 {
@@ -8,11 +10,15 @@ namespace BookAuthor.Api.DataAccess.Repository.Interface
                 Expression<Func<T, bool>> expression = null,
                 List<string> includes = null
             );
-        Task<IEnumerable<T>> GetAll(
+        Task<IEnumerable<T>> GetMany(
                 Expression<Func<T, bool>> expression = null,
                 List<string> includes = null
             );
-        
+        Task<IPagedList<T>> GetAll(
+                RequestParameters requestParameters,
+                List<string> includes = null
+            );
+
         Task Add(T entity);
         Task AddRange(IEnumerable<T> entities);
         void Delete(int id);
