@@ -6,8 +6,9 @@
         public string Title { get; set; }
         public string Isbn10 { get; set; }
         public string Isbn13 { get; set; }
-
-        public Author Author { get; set; }
-        public int AuthorId { get; set; }
+        public int? PageCount { get; set; }
+        public DateTime PublicationDate { get; set; }
+        public string Publisher { get; set; }
+        public ICollection<AuthorBook> AuthorBooks { get; set; }
     }
 }
