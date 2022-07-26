@@ -13,11 +13,11 @@ namespace BookAuthor.Api.Controllers
     [ApiController]
     public class AuthorController : ControllerBase
     {
-        private readonly ILogger _logger;
+        private readonly ILogger<AuthorController> _logger;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public AuthorController(IUnitOfWork unitOfWork, IMapper mapper, ILogger logger)
+        public AuthorController(IUnitOfWork unitOfWork, IMapper mapper, ILogger<AuthorController> logger)
         {
             _logger = logger;
             _unitOfWork = unitOfWork;
@@ -50,7 +50,7 @@ namespace BookAuthor.Api.Controllers
         {
             try
             {
-                var author = await _unitOfWork.Authors.Get(a => a.Id == id, new List<string> { "Books" });
+                var author = await _unitOfWork.Authors.Get(a => a.Id == id, new List<string> { "AuthorBooks.Book" });
                 if (author == null)
                 {
                     return NotFound();

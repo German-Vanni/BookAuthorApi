@@ -51,12 +51,20 @@ namespace BookAuthor.Api.Controllers
         {
             try
             {
-                var book = await _unitOfWork.Books.Get(b => b.Id == id, new List<string> { "Author"});
+                var book = await _unitOfWork.Books.Get(b => b.Id == id, new List<string> { "AuthorBooks.Author"});
                 if(book == null)
                 {
                     return NotFound();
                 }
+
                 var bookDto = _mapper.Map<BookDto>(book);
+                var authorsDto = new List<AuthorDtoForNesting>();
+                foreach(var a in book.AuthorBooks.Select(ab => ab.Author).ToList())
+                {
+                    authorsDto.Add(_mapper.Map<AuthorDtoForNesting>(a));
+                }
+                bookDto.Authors = authorsDto;
+
                 return Ok(bookDto);
             }
             catch (Exception ex)

@@ -7,7 +7,7 @@
         public string Isbn10 { get; set; }
         public string Isbn13 { get; set; }
         public int? PageCount { get; set; }
-        public DateTime PublicationDate { get; set; }
+        public DateTime? PublicationDate { get; set; }
         public string Publisher { get; set; }
         public ICollection<AuthorBook> AuthorBooks { get; set; }
     }

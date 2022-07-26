@@ -5,12 +5,24 @@ namespace BookAuthor.Api.Model.DTO
     public class BookDto
     {
         public int Id { get; set; }
-        [Required]
         public string Title { get; set; }
         public string Isbn10 { get; set; }
         public string Isbn13 { get; set; }
-        public int AuthorId { get; set; }
-        public AuthorDto Author { get; set; }
+        public int? PageCount { get; set; }
+        public DateTime? PublicationDate { get; set; }
+        public string Publisher { get; set; }
+        public IEnumerable<AuthorDtoForNesting> Authors { get; set; }
+    }
+
+    public class BookDtoForNesting
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public string Isbn10 { get; set; }
+        public string Isbn13 { get; set; }
+        public int? PageCount { get; set; }
+        public DateTime? PublicationDate { get; set; }
+        public string Publisher { get; set; }
     }
 
     public class BookDtoForCreation
@@ -20,7 +32,10 @@ namespace BookAuthor.Api.Model.DTO
         public string Title { get; set; }
         public string Isbn10 { get; set; }
         public string Isbn13 { get; set; }
-        public int AuthorId { get; set; }
+        public int? PageCount { get; set; }
+        public DateTime? PublicationDate { get; set; }
+        public string Publisher { get; set; }
+        public List<int> AuthorIds { get; set; }
     }
 
     public class BookDtoForUpdation
@@ -30,6 +45,9 @@ namespace BookAuthor.Api.Model.DTO
         public string Title { get; set; }
         public string Isbn10 { get; set; }
         public string Isbn13 { get; set; }
-        public int AuthorId { get; set; }
+        public int? PageCount { get; set; }
+        public DateTime? PublicationDate { get; set; }
+        public string Publisher { get; set; }
+        public List<int> AuthorIds { get; set; }
     }
 }

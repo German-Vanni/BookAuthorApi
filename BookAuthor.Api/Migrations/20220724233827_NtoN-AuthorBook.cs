@@ -249,26 +249,26 @@ namespace BookAuthor.Api.Migrations
                     { "71be4037-0100-412b-a591-4c39fe5a78d1", "7322bfca-9bfa-4c48-97ff-2960b27790aa", "Admin", "ADMIN" }
                 });
 
-            migrationBuilder.InsertData(
-                table: "Authors",
-                columns: new[] { "Id", "BirthDay", "Name" },
-                values: new object[,]
-                {
-                    { 1, new DateTime(1972, 8, 2, 21, 6, 21, 891, DateTimeKind.Local).AddTicks(5887), "Author One" },
-                    { 2, new DateTime(1987, 7, 30, 21, 6, 21, 891, DateTimeKind.Local).AddTicks(5901), "Author Two" },
-                    { 3, new DateTime(1992, 7, 28, 21, 6, 21, 891, DateTimeKind.Local).AddTicks(5902), "Author Three" }
-                });
+            //migrationBuilder.InsertData(
+            //    table: "Authors",
+            //    columns: new[] { "Id", "BirthDay", "Name" },
+            //    values: new object[,]
+            //    {
+            //        { 1, new DateTime(1972, 8, 2, 21, 6, 21, 891, DateTimeKind.Local).AddTicks(5887), "Author One" },
+            //        { 2, new DateTime(1987, 7, 30, 21, 6, 21, 891, DateTimeKind.Local).AddTicks(5901), "Author Two" },
+            //        { 3, new DateTime(1992, 7, 28, 21, 6, 21, 891, DateTimeKind.Local).AddTicks(5902), "Author Three" }
+            //    });
 
-            migrationBuilder.InsertData(
-                table: "Books",
-                columns: new[] { "Id", "AuthorId", "ISBN10", "ISBN13", "Title" },
-                values: new object[,]
-                {
-                    { 1, 1, "4242421421", "4242421421123", "Title 1" },
-                    { 2, 1, "4242421421", "4242421421123", "Title 2" },
-                    { 3, 2, "4242421421", "4242421421123", "Title 3" },
-                    { 4, 3, "4242421421", "4242421421123", "Title 4" }
-                });
+            //migrationBuilder.InsertData(
+            //    table: "Books",
+            //    columns: new[] { "Id", "AuthorId", "ISBN10", "ISBN13", "Title" },
+            //    values: new object[,]
+            //    {
+            //        { 1, 1, "4242421421", "4242421421123", "Title 1" },
+            //        { 2, 1, "4242421421", "4242421421123", "Title 2" },
+            //        { 3, 2, "4242421421", "4242421421123", "Title 3" },
+            //        { 4, 3, "4242421421", "4242421421123", "Title 4" }
+            //    });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Books_AuthorId",
