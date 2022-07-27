@@ -7,6 +7,8 @@ namespace BookAuthor.Api.DataAccess.Repository.UnitOfWork
     {
         IGenericRepository<Book> Books { get; }
         IGenericRepository<Author> Authors { get; }
+        IGenericRepository<BookScore> Ratings { get; }
+
         Task Save();
     }
 }

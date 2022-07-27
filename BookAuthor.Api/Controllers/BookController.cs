@@ -6,6 +6,7 @@ using BookAuthor.Api.Model.Paging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace BookAuthor.Api.Controllers
 {
@@ -16,11 +17,15 @@ namespace BookAuthor.Api.Controllers
         private readonly ILogger<BookController> _logger;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly IWebHostEnvironment _environment;
 
-        public BookController(IUnitOfWork unitOfWork,
+        public BookController(
+            IWebHostEnvironment environment,
+            IUnitOfWork unitOfWork,
             IMapper mapper, 
             ILogger<BookController> logger)
         {
+            _environment = environment;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
@@ -39,8 +44,11 @@ namespace BookAuthor.Api.Controllers
             }
             catch(Exception ex)
             {
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
+
                 _logger.LogError(ex.Message);
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, message);
             }
         }
         [HttpGet("{id:int}", Name ="GetBook")]
@@ -51,27 +59,24 @@ namespace BookAuthor.Api.Controllers
         {
             try
             {
-                var book = await _unitOfWork.Books.Get(b => b.Id == id, new List<string> { "AuthorBooks.Author"});
+                var book = await _unitOfWork.Books.Get(b => b.Id == id, new List<string> { "AuthorBooks.Author", "Ratings"});
                 if(book == null)
                 {
                     return NotFound();
                 }
 
                 var bookDto = _mapper.Map<BookDto>(book);
-                var authorsDto = new List<AuthorDtoForNesting>();
-                foreach(var a in book.AuthorBooks.Select(ab => ab.Author).ToList())
-                {
-                    authorsDto.Add(_mapper.Map<AuthorDtoForNesting>(a));
-                }
-                bookDto.Authors = authorsDto;
+                bookDto.Rating = book.Ratings.Average(r => r.Score);
 
                 return Ok(bookDto);
             }
             catch (Exception ex)
             {
-                //logging
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
+
                 _logger.LogError(ex.Message);
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, message);
             }
         }
 
@@ -97,9 +102,11 @@ namespace BookAuthor.Api.Controllers
             }
             catch(Exception ex)
             {
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
                 //logging
                 _logger.LogError(ex.Message);
-                return StatusCode(500, "Internal Server Error. Please try again later");
+                return StatusCode(500, message);
             }
         }
 
@@ -128,15 +135,17 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                //logging
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
+
                 _logger.LogError(ex.Message);
-                return StatusCode(500, "Internal Server Error. Please try again later");
+                return StatusCode(500, message);
             }
         }
 
         [Authorize]
         [HttpDelete("{id:int}", Name="DeleteBook")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> DeleteBook(int? id)
@@ -157,9 +166,64 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
                 //logging
                 _logger.LogError(ex.Message);
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, message);
+            }
+        }
+
+        [Authorize]
+        [HttpPost("rate/{id:int}", Name = "RateBook")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> RateBook(int? id,[FromBody] RateBookDto rateBookDto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (id == null || id < 1)
+            {
+                return BadRequest("Book id should be defined, and have a valid value");
+            }
+            try
+            {
+                if (userId is null) {
+                    throw new Exception("UserId is null");
+                }
+
+                var book = await _unitOfWork.Books.Get(b => b.Id == id, includes: new List<string> { "Ratings" });
+
+                if (book == null) return NotFound();
+
+                BookScore bookScoreOfUser = await _unitOfWork.Ratings
+                    .Get(r => r.UserId == userId && r.BookId == book.Id);
+
+                if (bookScoreOfUser != null)
+                {
+                    bookScoreOfUser.Score = rateBookDto.Score;
+                    _unitOfWork.Ratings.Update(bookScoreOfUser);
+                    await _unitOfWork.Save();
+                    return Ok();
+                }
+
+                bookScoreOfUser = new BookScore();
+                bookScoreOfUser.Score = rateBookDto.Score;
+                bookScoreOfUser.BookId = book.Id;
+                bookScoreOfUser.UserId = userId;
+
+                await _unitOfWork.Ratings.Add(bookScoreOfUser);
+                await _unitOfWork.Save();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
+
+                _logger.LogError(ex.Message);
+                return StatusCode(500, message);
             }
         }
     }

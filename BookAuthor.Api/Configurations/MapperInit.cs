@@ -21,7 +21,6 @@ namespace BookAuthor.Api.Configurations
             CreateMap<Book, BookDto>()
                 .ForMember(dto => dto.Authors,
                     opt => opt.MapFrom(b => b.AuthorBooks.Select(ab => ab.Author).ToList()));
-            CreateMap<Book, BookDto>().ReverseMap();
             CreateMap<Book, BookDtoForNesting>();
             CreateMap<Book, BookDtoForCreation>().ReverseMap();
             CreateMap<Book, BookDtoForUpdation>().ReverseMap();

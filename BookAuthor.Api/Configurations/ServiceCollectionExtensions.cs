@@ -56,6 +56,7 @@ namespace BookAuthor.Api.Configurations
                         ValidateIssuer = true,
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
+                        ValidateAudience = false,
                         ValidIssuer = jwtSettingsSection.GetSection("Issuer").Value,
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
                     };
