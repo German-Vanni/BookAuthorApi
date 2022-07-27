@@ -13,12 +13,18 @@ namespace BookAuthor.Api.Controllers
     [ApiController]
     public class AuthorController : ControllerBase
     {
+        private readonly IHostEnvironment _environment;
         private readonly ILogger<AuthorController> _logger;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public AuthorController(IUnitOfWork unitOfWork, IMapper mapper, ILogger<AuthorController> logger)
+        public AuthorController(
+            IHostEnvironment environment,
+            IUnitOfWork unitOfWork, 
+            IMapper mapper, 
+            ILogger<AuthorController> logger)
         {
+            _environment = environment;
             _logger = logger;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -26,7 +32,7 @@ namespace BookAuthor.Api.Controllers
 
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpGet]
+        [HttpGet(Name = "GetAuthors")]
         public async Task<IActionResult> GetAuthors([FromQuery] RequestParameters requestParameters)
         {
             try
@@ -37,9 +43,11 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                //logging
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
+
                 _logger.LogError(ex.Message);
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, message);
             }
         }
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -60,16 +68,18 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                //logging
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
+
                 _logger.LogError(ex.Message);
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, message);
             }
         }
 
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPost]
+        [HttpPost(Name = "CreateAuthor")]
         public async Task<IActionResult> CreateAuthor([FromBody]AuthorDtoForCreation authorDto)
         {
             if (!ModelState.IsValid)
@@ -88,9 +98,11 @@ namespace BookAuthor.Api.Controllers
             }
             catch(Exception ex)
             {
-                //logging
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
+
                 _logger.LogError(ex.Message);
-                return StatusCode(500, "Internal Server Error. Please try again later");
+                return StatusCode(500, message);
             }
         }
 
@@ -119,9 +131,11 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                //logging
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
+
                 _logger.LogError(ex.Message);
-                return StatusCode(500, "Internal Server Error. Please try again later");
+                return StatusCode(500, message);
             }
         }
 
@@ -148,9 +162,11 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                //logging
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
+
                 _logger.LogError(ex.Message);
-                return StatusCode(500, "Internal Server Error. Please try again later");
+                return StatusCode(500, message);
             }
         }
     }

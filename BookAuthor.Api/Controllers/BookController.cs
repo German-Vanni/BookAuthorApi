@@ -31,15 +31,20 @@ namespace BookAuthor.Api.Controllers
             _logger = logger;
         }
 
-        [HttpGet]
+        [HttpGet(Name ="GetBooks")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetBooks([FromQuery] RequestParameters requestParameters)
         {
             try
             {
-                var books = await _unitOfWork.Books.GetAll(requestParameters);
+                var books = await _unitOfWork.Books.GetAll(requestParameters, new List<string>
+                {
+                    "Ratings"
+                });
                 var bookDto_list = _mapper.Map<IEnumerable<Book>, IEnumerable<BookDto>>(books);
+                foreach (var b in bookDto_list) b.Rating = b.Rating == 0 ? null : b.Rating;
+                //as scores are between 1 and 5, if no ratings are found and it will give the default value 0
                 return Ok(bookDto_list);
             }
             catch(Exception ex)
@@ -66,7 +71,8 @@ namespace BookAuthor.Api.Controllers
                 }
 
                 var bookDto = _mapper.Map<BookDto>(book);
-                bookDto.Rating = book.Ratings.Average(r => r.Score);
+                double ratingAverage = book.Ratings.Average(r => r.Score);
+                bookDto.Rating = ratingAverage == 0 ? null : ratingAverage;
 
                 return Ok(bookDto);
             }
@@ -79,11 +85,11 @@ namespace BookAuthor.Api.Controllers
                 return StatusCode(500, message);
             }
         }
-
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPost]
+        [HttpPost(Name = "CreateBook")]
         public async Task<IActionResult> CreateBook([FromBody] BookDtoForCreation bookDto)
         {
             if (!ModelState.IsValid)

@@ -7,15 +7,20 @@ namespace BookAuthor.Api.DataAccess
 {
     public class AppDbContext : IdentityDbContext<ApiUser>
     {
-        public AppDbContext(DbContextOptions opt) : base(opt)
+        private readonly IConfiguration _configuration;
+        public AppDbContext(DbContextOptions opt, IConfiguration configuration) : base(opt)
         {
-
+            _configuration = configuration;
         }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-            builder.ApplyConfiguration(new RoleEntityConfiguration());
+            builder.ApplyConfiguration(new RoleEntityConfiguration(_configuration));
+
+            builder.ApplyConfiguration(new ApiUserEntityConfiguration(_configuration));
+
+            builder.ApplyConfiguration(new UserRoleEntityConfiguration(_configuration));
 
             builder.ApplyConfiguration(new AuthorBookConfiguration());
 

@@ -11,7 +11,7 @@ namespace BookAuthor.Api.Model.DTO
         public int? PageCount { get; set; }
         public DateTime? PublicationDate { get; set; }
         public string Publisher { get; set; }
-        public double Rating { get; set; }
+        public double? Rating { get; set; }
         public IEnumerable<AuthorDtoForNesting> Authors { get; set; }
     }
 
@@ -24,7 +24,7 @@ namespace BookAuthor.Api.Model.DTO
         public int? PageCount { get; set; }
         public DateTime? PublicationDate { get; set; }
         public string Publisher { get; set; }
-        public double Rating { get; set; }
+        public double? Rating { get; set; }
     }
 
     public class BookDtoForCreation
