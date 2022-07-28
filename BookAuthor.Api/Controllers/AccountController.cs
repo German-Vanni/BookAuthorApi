@@ -97,6 +97,13 @@ namespace BookAuthor.Api.Controllers
 
             try
             {
+                ApiUser user = await _userManager.FindByEmailAsync(userDto.Email);
+                if (user is null)
+                {
+                    _logger.LogInformation("User with Email: {0} was not found", userDto.Email);
+                    return Unauthorized("Invalid sign in credentials");
+                }
+
                 if (!await _authManager.ValidateUser(userDto))
                 {
                     return Unauthorized("Invalid sign in credentials");

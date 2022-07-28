@@ -5,6 +5,7 @@ using BookAuthor.Api.Model.DTO;
 using BookAuthor.Api.Model.Paging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -18,17 +19,20 @@ namespace BookAuthor.Api.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IWebHostEnvironment _environment;
+        private readonly UserManager<ApiUser> _userManager;
 
         public BookController(
             IWebHostEnvironment environment,
             IUnitOfWork unitOfWork,
             IMapper mapper, 
-            ILogger<BookController> logger)
+            ILogger<BookController> logger,
+            UserManager<ApiUser> userManager)
         {
             _environment = environment;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _userManager = userManager;
         }
 
         [HttpGet(Name ="GetBooks")]
@@ -42,8 +46,14 @@ namespace BookAuthor.Api.Controllers
                 {
                     "Ratings"
                 });
-                var bookDto_list = _mapper.Map<IEnumerable<Book>, IEnumerable<BookDto>>(books);
-                foreach (var b in bookDto_list) b.Rating = b.Rating == 0 ? null : b.Rating;
+                var bookDto_list = _mapper.Map<IEnumerable<Book>, IEnumerable<BookDto>>(books).ToList();
+                for(int i = 0; i<books.Count; i++)
+                {
+                    double? ratingAverage = null;
+                    if (books[i].Ratings.Count > 0) ratingAverage = books[i].Ratings.Average(r => r.Score);
+                    bookDto_list[i].Rating = ratingAverage;
+                }
+                //foreach (var b in bookDto_list) b.Rating = b.Rating == 0 ? null : b.Rating;
                 //as scores are between 1 and 5, if no ratings are found and it will give the default value 0
                 return Ok(bookDto_list);
             }
@@ -56,6 +66,7 @@ namespace BookAuthor.Api.Controllers
                 return StatusCode(500, message);
             }
         }
+
         [HttpGet("{id:int}", Name ="GetBook")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -71,8 +82,10 @@ namespace BookAuthor.Api.Controllers
                 }
 
                 var bookDto = _mapper.Map<BookDto>(book);
-                double ratingAverage = book.Ratings.Average(r => r.Score);
-                bookDto.Rating = ratingAverage == 0 ? null : ratingAverage;
+
+                double? ratingAverage = null;
+                if(book.Ratings.Count > 0) ratingAverage = book.Ratings.Average(r => r.Score);
+                bookDto.Rating = ratingAverage;
 
                 return Ok(bookDto);
             }
@@ -92,6 +105,8 @@ namespace BookAuthor.Api.Controllers
         [HttpPost(Name = "CreateBook")]
         public async Task<IActionResult> CreateBook([FromBody] BookDtoForCreation bookDto)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -99,6 +114,13 @@ namespace BookAuthor.Api.Controllers
 
             try
             {
+                ApiUser user = await _userManager.FindByIdAsync(userId);
+                if (userId is null)
+                {
+                    _logger.LogInformation("User with UserId: {0} was not found", userId);
+                    return Unauthorized("Invalid sign in credentials");
+                }
+
                 var book = _mapper.Map<Book>(bookDto);
                 await _unitOfWork.Books.Add(book);
                 await _unitOfWork.Save();
@@ -116,17 +138,28 @@ namespace BookAuthor.Api.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPut("{id:int}", Name ="UpdateBook")]
         public async Task<IActionResult> UpdateBook(int? id, [FromBody] BookDtoForUpdation bookDto)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             if (id == null || id < 1) return BadRequest("Book id should be defined, and have a valid value");
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             try
             {
+                ApiUser user = await _userManager.FindByIdAsync(userId);
+                if (userId is null)
+                {
+                    _logger.LogInformation("User with UserId: {0} was not found", userId);
+                    return Unauthorized("Invalid sign in credentials");
+                }
+
                 var book = await _unitOfWork.Books.Get(b => b.Id == (int)id);
                 if(book == null)
                 {
@@ -149,19 +182,29 @@ namespace BookAuthor.Api.Controllers
             }
         }
 
-        [Authorize]
+        [Authorize(Roles="Admin")]
         [HttpDelete("{id:int}", Name="DeleteBook")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> DeleteBook(int? id)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             if (id == null || id < 1)
             {
                 return BadRequest("Book id should be defined, and have a valid value");
             }
             try
             {
+                ApiUser user = await _userManager.FindByIdAsync(userId);
+                if (userId is null)
+                {
+                    _logger.LogInformation("User with UserId: {0} was not found", userId);
+                    return Unauthorized("Invalid sign in credentials");
+                }
+
                 var book = await _unitOfWork.Books.Get(b => b.Id == id);
 
                 if (book == null) return NotFound();
@@ -184,11 +227,13 @@ namespace BookAuthor.Api.Controllers
         [HttpPost("rate/{id:int}", Name = "RateBook")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> RateBook(int? id,[FromBody] RateBookDto rateBookDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             if (id == null || id < 1)
             {
                 return BadRequest("Book id should be defined, and have a valid value");
@@ -196,7 +241,15 @@ namespace BookAuthor.Api.Controllers
             try
             {
                 if (userId is null) {
-                    throw new Exception("UserId is null");
+                    _logger.LogInformation("User with UserId: {0} was not found", userId);
+                    return Unauthorized("Invalid sign in credentials");
+                }
+
+                ApiUser user = await _userManager.FindByIdAsync(userId);
+                if (user is null)
+                {
+                    _logger.LogInformation("User with Id: {0} was not found", userId);
+                    return Unauthorized("Invalid sign in credentials");
                 }
 
                 var book = await _unitOfWork.Books.Get(b => b.Id == id, includes: new List<string> { "Ratings" });
