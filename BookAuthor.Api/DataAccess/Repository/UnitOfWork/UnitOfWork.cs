@@ -12,6 +12,7 @@ namespace BookAuthor.Api.DataAccess.Repository.UnitOfWork
         public IGenericRepository<Book> Books { get; private set; } 
         public IGenericRepository<Author> Authors { get; private set; }
         public IGenericRepository<BookScore> Ratings { get; private set; }
+        public IGenericRepository<AuthorBook> AuthorBooks { get; private set; }
 
         public UnitOfWork(AppDbContext dbContext)
         {
@@ -19,6 +20,7 @@ namespace BookAuthor.Api.DataAccess.Repository.UnitOfWork
             Books = new GenericRepository<Book>(dbContext);
             Authors= new GenericRepository<Author>(dbContext);
             Ratings = new GenericRepository<BookScore>(dbContext);
+            AuthorBooks = new GenericRepository<AuthorBook>(dbContext);
         }
 
         public void Dispose()

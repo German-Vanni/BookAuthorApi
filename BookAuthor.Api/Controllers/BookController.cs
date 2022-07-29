@@ -131,14 +131,41 @@ namespace BookAuthor.Api.Controllers
 
                 var book = _mapper.Map<Book>(bookDto);
 
+                if(bookDto.AuthorIds is null || bookDto.AuthorIds.Count == 0)
+                {
+                    return BadRequest("A book  should have atleast one author (authorIds is empty");
+                }
+
+                book.AuthorBooks = new List<AuthorBook>();
+                List<Author> authorsForResultMapping = new List<Author>();
+                foreach (int id in bookDto.AuthorIds)
+                {
+                    var author = await _unitOfWork.Authors.Get(a => a.Id == id);
+                    if (author == null) return BadRequest($"AuthorId {id} does not exists");
+                    authorsForResultMapping.Add(author);
+
+                    book.AuthorBooks.Add(new AuthorBook { AuthorId = author.Id, Book = book });
+                }
+
                 var userRoles = await _userManager.GetRolesAsync(user);
                 bool isAdmin = userRoles.Contains("Admin");
                 book.Approved = isAdmin;
 
                 await _unitOfWork.Books.Add(book);
+                foreach(var ab in book.AuthorBooks)
+                {
+                    await _unitOfWork.AuthorBooks.Add(ab);
+                }
                 await _unitOfWork.Save();
 
                 var bookResultDto = _mapper.Map<BookDto>(book);
+                bookResultDto.Authors = new List<AuthorDtoForNesting>();
+                foreach(var a in authorsForResultMapping)
+                {
+                    var nestedAuthor = _mapper.Map<AuthorDtoForNesting>(a);
+                    bookResultDto.Authors.Add(nestedAuthor);
+                }
+                
                 return CreatedAtRoute("GetBook", new { id = book.Id }, bookResultDto);
             }
             catch(Exception ex)
