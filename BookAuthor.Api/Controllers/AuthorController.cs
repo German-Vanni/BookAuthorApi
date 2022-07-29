@@ -42,7 +42,10 @@ namespace BookAuthor.Api.Controllers
         {
             try
             {
-                var authors = await _unitOfWork.Authors.GetAll(requestParameters);
+                var authors = await _unitOfWork.Authors
+                    .GetPaged(
+                    requestParameters, 
+                    a => a.Approved);
                 var authorsDtos = _mapper.Map<IEnumerable<Author>, IEnumerable<AuthorDto>>(authors);
                 return Ok(authorsDtos);
             }
@@ -68,6 +71,11 @@ namespace BookAuthor.Api.Controllers
                 {
                     return NotFound();
                 }
+                if (!author.Approved)
+                {
+                    return Conflict("Author is pending approval");
+                }
+
                 var authorDto = _mapper.Map<AuthorDto>(author);
                 return Ok(authorDto);
             }
@@ -106,6 +114,11 @@ namespace BookAuthor.Api.Controllers
                 }
 
                 var author = _mapper.Map<Author>(authorDto);
+
+                var userRoles = await _userManager.GetRolesAsync(user);
+                bool isAdmin = userRoles.Contains("Admin");
+                author.Approved = isAdmin;
+
                 await _unitOfWork.Authors.Add(author);
                 await _unitOfWork.Save();
 
@@ -196,6 +209,78 @@ namespace BookAuthor.Api.Controllers
                 _unitOfWork.Books.Delete(author.Id);
                 await _unitOfWork.Save();
                 return NoContent();
+            }
+            catch (Exception ex)
+            {
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
+
+                _logger.LogError(ex.Message);
+                return StatusCode(500, message);
+            }
+        }
+
+        [HttpGet("approve", Name = "GetUnapprovedAuthors")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetUnapprovedAuthors([FromQuery] RequestParameters requestParameters)
+        {
+            try
+            {
+                var authors = await _unitOfWork.Authors
+                    .GetPaged(
+                    requestParameters,
+                    a => a.Approved == false
+                    );
+                var authorDto_list = _mapper.Map<IEnumerable<Author>, IEnumerable<AuthorDto>>(authors).ToList();
+
+                return Ok(authorDto_list);
+            }
+            catch (Exception ex)
+            {
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
+
+                _logger.LogError(ex.Message);
+                return StatusCode(500, message);
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPost("approve/{id:int}", Name = "ApproveAuthor")]
+        public async Task<IActionResult> ApproveAuthor(int? id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (id == null || id < 1) return BadRequest("Author id should be defined, and have a valid value");
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                ApiUser user = await _userManager.FindByIdAsync(userId);
+                if (userId is null)
+                {
+                    _logger.LogInformation("User with UserId: {0} was not found", userId);
+                    return Unauthorized("Invalid sign in credentials");
+                }
+
+                var author = await _unitOfWork.Authors.Get(a => a.Id == (int)id);
+                if (author == null)
+                {
+                    return NotFound();
+                }
+
+                author.Approved = true;
+
+                _unitOfWork.Authors.Update(author);
+                await _unitOfWork.Save();
+
+                return Ok();
             }
             catch (Exception ex)
             {

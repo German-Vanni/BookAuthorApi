@@ -42,10 +42,14 @@ namespace BookAuthor.Api.Controllers
         {
             try
             {
-                var books = await _unitOfWork.Books.GetAll(requestParameters, new List<string>
-                {
-                    "Ratings"
-                });
+                var books = await _unitOfWork.Books
+                    .GetPaged(
+                    requestParameters,
+                    b => b.Approved,
+                    includes: new List<string>
+                    {
+                        "Ratings"
+                    });
                 var bookDto_list = _mapper.Map<IEnumerable<Book>, IEnumerable<BookDto>>(books).ToList();
                 for(int i = 0; i<books.Count; i++)
                 {
@@ -79,6 +83,10 @@ namespace BookAuthor.Api.Controllers
                 if(book == null)
                 {
                     return NotFound();
+                }
+                if (!book.Approved)
+                {
+                    return Conflict("Book is pending approval");
                 }
 
                 var bookDto = _mapper.Map<BookDto>(book);
@@ -122,6 +130,11 @@ namespace BookAuthor.Api.Controllers
                 }
 
                 var book = _mapper.Map<Book>(bookDto);
+
+                var userRoles = await _userManager.GetRolesAsync(user);
+                bool isAdmin = userRoles.Contains("Admin");
+                book.Approved = isAdmin;
+
                 await _unitOfWork.Books.Add(book);
                 await _unitOfWork.Save();
 
@@ -256,6 +269,11 @@ namespace BookAuthor.Api.Controllers
 
                 if (book == null) return NotFound();
 
+                if (!book.Approved)
+                {
+                    return Conflict("Book is pending approval");
+                }
+
                 BookScore bookScoreOfUser = await _unitOfWork.Ratings
                     .Get(r => r.UserId == userId && r.BookId == book.Id);
 
@@ -274,6 +292,78 @@ namespace BookAuthor.Api.Controllers
 
                 await _unitOfWork.Ratings.Add(bookScoreOfUser);
                 await _unitOfWork.Save();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
+
+                _logger.LogError(ex.Message);
+                return StatusCode(500, message);
+            }
+        }
+
+        [HttpGet("approve",Name = "GetUnapprovedBooks")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetUnapprovedBooks([FromQuery] RequestParameters requestParameters)
+        {
+            try
+            {
+                var books = await _unitOfWork.Books
+                    .GetPaged(
+                    requestParameters,
+                    b => b.Approved == false
+                    );
+                var bookDto_list = _mapper.Map<IEnumerable<Book>, IEnumerable<BookDto>>(books).ToList();
+                
+                return Ok(bookDto_list);
+            }
+            catch (Exception ex)
+            {
+                string message = "Internal Server Error.Please try again later";
+                if (_environment.IsDevelopment()) message = ex.Message;
+
+                _logger.LogError(ex.Message);
+                return StatusCode(500, message);
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [HttpPost("approve/{id:int}", Name = "ApproveBook")]
+        public async Task<IActionResult> ApproveBook(int? id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (id == null || id < 1) return BadRequest("Book id should be defined, and have a valid value");
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                ApiUser user = await _userManager.FindByIdAsync(userId);
+                if (userId is null)
+                {
+                    _logger.LogInformation("User with UserId: {0} was not found", userId);
+                    return Unauthorized("Invalid sign in credentials");
+                }
+
+                var book = await _unitOfWork.Books.Get(a => a.Id == (int)id);
+                if (book == null)
+                {
+                    return NotFound();
+                }
+
+                book.Approved = true;
+
+                _unitOfWork.Books.Update(book);
+                await _unitOfWork.Save();
+
                 return Ok();
             }
             catch (Exception ex)

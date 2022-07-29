@@ -79,10 +79,18 @@ namespace BookAuthor.Api.DataAccess.Repository
             return await query.AsNoTracking().ToListAsync();
         }
 
-        public async Task<IPagedList<T>> GetAll(RequestParameters requestParameters, List<string> includes = null)
+        public async Task<IPagedList<T>> GetPaged(
+            RequestParameters requestParameters,
+            Expression<Func<T, bool>> expression = null,
+            List<string> includes = null)
         {
 
             IQueryable<T> query = _dbSet;
+
+            if(expression != null)
+            {
+                query = query.Where(expression);
+            }
 
             if (includes != null)
             {
