@@ -11,12 +11,12 @@ namespace BookAuthor.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AccountController : ControllerBase
+    public class AccountController : ApiControllerBase<AccountController>
     {
-        private readonly IWebHostEnvironment _environment;
-        private readonly IConfiguration _configuration;
-        private readonly UserManager<ApiUser> _userManager;
-        private readonly ILogger<BookController> _logger;
+        //private readonly IWebHostEnvironment _environment;
+        //private readonly IConfiguration _configuration;
+        //private readonly UserManager<ApiUser> _userManager;
+        //private readonly ILogger<AccountController> _logger;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IAuthManager _authManager;
@@ -25,20 +25,16 @@ namespace BookAuthor.Api.Controllers
         public AccountController(
             IWebHostEnvironment environment,
             IConfiguration configuration,
-            ILogger<BookController> logger,
-            IUnitOfWork unitOfWork,
+            ILogger<AccountController> logger,
             IMapper mapper,
-             IAuthManager authManager, 
+            IUnitOfWork unitOfWork,
+            IAuthManager authManager, 
             UserManager<ApiUser> userManager
-            )
+            ): base(environment, logger, userManager)
         {
-            _environment = environment;
-            _configuration = configuration;
-            _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _unitOfWork = unitOfWork;
             _authManager = authManager;
-            _userManager = userManager;
-            _logger = logger;
 
             USER_ROLE_NAME = configuration.GetSection("Roles").GetSection("User").GetSection("Name").Value;
         }
@@ -75,10 +71,10 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = "Internal Server Error.Please try again later";
+                string message = ERROR_500_MSG;
                 if (_environment.IsDevelopment()) message = ex.Message;
 
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex, ex.Message);
                 return StatusCode(500, message);
             }
         }
@@ -113,10 +109,10 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = "Internal Server Error.Please try again later";
+                string message = ERROR_500_MSG;
                 if (_environment.IsDevelopment()) message = ex.Message;
 
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex, ex.Message);
                 return StatusCode(500, message);
             }
         }

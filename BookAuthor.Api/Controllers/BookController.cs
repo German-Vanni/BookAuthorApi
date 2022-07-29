@@ -11,28 +11,22 @@ using System.Security.Claims;
 
 namespace BookAuthor.Api.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
-    public class BookController : ControllerBase
+    public class BookController : ApiControllerBase<BookController>
     {
-        private readonly ILogger<BookController> _logger;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        private readonly IWebHostEnvironment _environment;
-        private readonly UserManager<ApiUser> _userManager;
 
         public BookController(
             IWebHostEnvironment environment,
             IUnitOfWork unitOfWork,
             IMapper mapper, 
             ILogger<BookController> logger,
-            UserManager<ApiUser> userManager)
+            UserManager<ApiUser> userManager) 
+            : base(environment, logger, userManager)
         {
-            _environment = environment;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
-            _logger = logger;
-            _userManager = userManager;
         }
 
         [HttpGet(Name ="GetBooks")]
@@ -63,10 +57,10 @@ namespace BookAuthor.Api.Controllers
             }
             catch(Exception ex)
             {
-                string message = "Internal Server Error.Please try again later";
+                string message = ERROR_500_MSG;
                 if (_environment.IsDevelopment()) message = ex.Message;
 
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex, ex.Message);
                 return StatusCode(500, message);
             }
         }
@@ -99,10 +93,10 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = "Internal Server Error.Please try again later";
+                string message = ERROR_500_MSG;
                 if (_environment.IsDevelopment()) message = ex.Message;
 
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex, ex.Message);
                 return StatusCode(500, message);
             }
         }
@@ -113,7 +107,7 @@ namespace BookAuthor.Api.Controllers
         [HttpPost(Name = "CreateBook")]
         public async Task<IActionResult> CreateBook([FromBody] BookDtoForCreation bookDto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            ApiUser user;
 
             if (!ModelState.IsValid)
             {
@@ -122,11 +116,10 @@ namespace BookAuthor.Api.Controllers
 
             try
             {
-                ApiUser user = await _userManager.FindByIdAsync(userId);
-                if (userId is null)
+                user = await GetClaimedUser();
+                if(user is null)
                 {
-                    _logger.LogInformation("User with UserId: {0} was not found", userId);
-                    return Unauthorized("Invalid sign in credentials");
+                    return ClaimedUserNotFound();
                 }
 
                 var book = _mapper.Map<Book>(bookDto);
@@ -137,7 +130,7 @@ namespace BookAuthor.Api.Controllers
                 }
 
                 book.AuthorBooks = new List<AuthorBook>();
-                List<Author> authorsForResultMapping = new List<Author>();
+                List<Author> authorsForResultMapping = new();
                 foreach (int id in bookDto.AuthorIds)
                 {
                     var author = await _unitOfWork.Authors.Get(a => a.Id == id);
@@ -147,9 +140,7 @@ namespace BookAuthor.Api.Controllers
                     book.AuthorBooks.Add(new AuthorBook { AuthorId = author.Id, Book = book });
                 }
 
-                var userRoles = await _userManager.GetRolesAsync(user);
-                bool isAdmin = userRoles.Contains("Admin");
-                book.Approved = isAdmin;
+                book.Approved = await IsUserInRoles(user, "Admin");
 
                 await _unitOfWork.Books.Add(book);
                 foreach(var ab in book.AuthorBooks)
@@ -170,10 +161,10 @@ namespace BookAuthor.Api.Controllers
             }
             catch(Exception ex)
             {
-                string message = "Internal Server Error.Please try again later";
+                string message = ERROR_500_MSG;
                 if (_environment.IsDevelopment()) message = ex.Message;
-                //logging
-                _logger.LogError(ex.Message);
+
+                _logger.LogError(ex, ex.Message);
                 return StatusCode(500, message);
             }
         }
@@ -186,18 +177,17 @@ namespace BookAuthor.Api.Controllers
         [HttpPut("{id:int}", Name ="UpdateBook")]
         public async Task<IActionResult> UpdateBook(int? id, [FromBody] BookDtoForUpdation bookDto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            ApiUser user;
 
             if (id == null || id < 1) return BadRequest("Book id should be defined, and have a valid value");
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             try
             {
-                ApiUser user = await _userManager.FindByIdAsync(userId);
-                if (userId is null)
+                user = await GetClaimedUser();
+                if (user is null)
                 {
-                    _logger.LogInformation("User with UserId: {0} was not found", userId);
-                    return Unauthorized("Invalid sign in credentials");
+                    return ClaimedUserNotFound();
                 }
 
                 var book = await _unitOfWork.Books.Get(b => b.Id == (int)id);
@@ -214,10 +204,10 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = "Internal Server Error.Please try again later";
+                string message = ERROR_500_MSG;
                 if (_environment.IsDevelopment()) message = ex.Message;
 
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex, ex.Message);
                 return StatusCode(500, message);
             }
         }
@@ -230,7 +220,7 @@ namespace BookAuthor.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> DeleteBook(int? id)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            ApiUser user;
 
             if (id == null || id < 1)
             {
@@ -238,11 +228,10 @@ namespace BookAuthor.Api.Controllers
             }
             try
             {
-                ApiUser user = await _userManager.FindByIdAsync(userId);
-                if (userId is null)
+                user = await GetClaimedUser();
+                if (user is null)
                 {
-                    _logger.LogInformation("User with UserId: {0} was not found", userId);
-                    return Unauthorized("Invalid sign in credentials");
+                    return ClaimedUserNotFound();
                 }
 
                 var book = await _unitOfWork.Books.Get(b => b.Id == id);
@@ -255,10 +244,10 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = "Internal Server Error.Please try again later";
+                string message = ERROR_500_MSG;
                 if (_environment.IsDevelopment()) message = ex.Message;
                 //logging
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex, ex.Message);
                 return StatusCode(500, message);
             }
         }
@@ -272,7 +261,7 @@ namespace BookAuthor.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> RateBook(int? id,[FromBody] RateBookDto rateBookDto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            ApiUser user;
 
             if (id == null || id < 1)
             {
@@ -280,16 +269,10 @@ namespace BookAuthor.Api.Controllers
             }
             try
             {
-                if (userId is null) {
-                    _logger.LogInformation("User with UserId: {0} was not found", userId);
-                    return Unauthorized("Invalid sign in credentials");
-                }
-
-                ApiUser user = await _userManager.FindByIdAsync(userId);
+                user = await GetClaimedUser();
                 if (user is null)
                 {
-                    _logger.LogInformation("User with Id: {0} was not found", userId);
-                    return Unauthorized("Invalid sign in credentials");
+                    return ClaimedUserNotFound();
                 }
 
                 var book = await _unitOfWork.Books.Get(b => b.Id == id, includes: new List<string> { "Ratings" });
@@ -302,7 +285,7 @@ namespace BookAuthor.Api.Controllers
                 }
 
                 BookScore bookScoreOfUser = await _unitOfWork.Ratings
-                    .Get(r => r.UserId == userId && r.BookId == book.Id);
+                    .Get(r => r.UserId == user.Id && r.BookId == book.Id);
 
                 if (bookScoreOfUser != null)
                 {
@@ -312,10 +295,12 @@ namespace BookAuthor.Api.Controllers
                     return Ok();
                 }
 
-                bookScoreOfUser = new BookScore();
-                bookScoreOfUser.Score = rateBookDto.Score;
-                bookScoreOfUser.BookId = book.Id;
-                bookScoreOfUser.UserId = userId;
+                bookScoreOfUser = new BookScore()
+                {
+                    Score = rateBookDto.Score,
+                    BookId = book.Id,
+                    UserId = user.Id
+                };
 
                 await _unitOfWork.Ratings.Add(bookScoreOfUser);
                 await _unitOfWork.Save();
@@ -323,21 +308,28 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = "Internal Server Error.Please try again later";
+                string message = ERROR_500_MSG;
                 if (_environment.IsDevelopment()) message = ex.Message;
 
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex, ex.Message);
                 return StatusCode(500, message);
             }
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpGet("approve",Name = "GetUnapprovedBooks")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetUnapprovedBooks([FromQuery] RequestParameters requestParameters)
         {
+            ApiUser user;
             try
             {
+                user = await GetClaimedUser();
+                if (user is null)
+                {
+                    return ClaimedUserNotFound();
+                }
+
                 var books = await _unitOfWork.Books
                     .GetPaged(
                     requestParameters,
@@ -349,10 +341,10 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = "Internal Server Error.Please try again later";
+                string message = ERROR_500_MSG;
                 if (_environment.IsDevelopment()) message = ex.Message;
 
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex, ex.Message);
                 return StatusCode(500, message);
             }
         }
@@ -366,18 +358,17 @@ namespace BookAuthor.Api.Controllers
         [HttpPost("approve/{id:int}", Name = "ApproveBook")]
         public async Task<IActionResult> ApproveBook(int? id)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            ApiUser user;
 
             if (id == null || id < 1) return BadRequest("Book id should be defined, and have a valid value");
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             try
             {
-                ApiUser user = await _userManager.FindByIdAsync(userId);
-                if (userId is null)
+                user = await GetClaimedUser();
+                if (user is null)
                 {
-                    _logger.LogInformation("User with UserId: {0} was not found", userId);
-                    return Unauthorized("Invalid sign in credentials");
+                    return ClaimedUserNotFound();
                 }
 
                 var book = await _unitOfWork.Books.Get(a => a.Id == (int)id);
@@ -395,10 +386,10 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = "Internal Server Error.Please try again later";
+                string message = ERROR_500_MSG;
                 if (_environment.IsDevelopment()) message = ex.Message;
 
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex, ex.Message);
                 return StatusCode(500, message);
             }
         }
