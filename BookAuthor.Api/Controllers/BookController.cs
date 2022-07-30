@@ -51,17 +51,13 @@ namespace BookAuthor.Api.Controllers
                     if (books[i].Ratings.Count > 0) ratingAverage = books[i].Ratings.Average(r => r.Score);
                     bookDto_list[i].Rating = ratingAverage;
                 }
-                //foreach (var b in bookDto_list) b.Rating = b.Rating == 0 ? null : b.Rating;
-                //as scores are between 1 and 5, if no ratings are found and it will give the default value 0
+                //as scores are between 1 and 5, if no ratings are found for this book
+                //null is asigned to it
                 return Ok(bookDto_list);
             }
             catch(Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
 
@@ -93,11 +89,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
         [Authorize]
@@ -113,7 +105,6 @@ namespace BookAuthor.Api.Controllers
             {
                 return BadRequest(ModelState);
             }
-
             try
             {
                 user = await GetClaimedUser();
@@ -140,6 +131,7 @@ namespace BookAuthor.Api.Controllers
                     book.AuthorBooks.Add(new AuthorBook { AuthorId = author.Id, Book = book });
                 }
 
+                //automatically approve if user is an admin
                 book.Approved = await IsUserInRoles(user, "Admin");
 
                 await _unitOfWork.Books.Add(book);
@@ -161,11 +153,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch(Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
 
@@ -204,11 +192,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
 
@@ -244,11 +228,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-                //logging
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
 
@@ -308,11 +288,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
         [Authorize(Roles = "Admin")]
@@ -341,11 +317,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
 
@@ -386,11 +358,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
     }

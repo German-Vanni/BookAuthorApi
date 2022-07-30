@@ -13,10 +13,6 @@ namespace BookAuthor.Api.Controllers
     [ApiController]
     public class AccountController : ApiControllerBase<AccountController>
     {
-        //private readonly IWebHostEnvironment _environment;
-        //private readonly IConfiguration _configuration;
-        //private readonly UserManager<ApiUser> _userManager;
-        //private readonly ILogger<AccountController> _logger;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IAuthManager _authManager;
@@ -71,11 +67,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
 
@@ -109,11 +101,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
 

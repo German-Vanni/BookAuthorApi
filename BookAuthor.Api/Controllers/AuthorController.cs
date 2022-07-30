@@ -45,11 +45,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -75,11 +71,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = "Internal Server Error.Please try again later";
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
 
@@ -97,7 +89,6 @@ namespace BookAuthor.Api.Controllers
             {
                 return BadRequest(ModelState);
             }
-
             try
             {
                 user = await GetClaimedUser();
@@ -108,6 +99,7 @@ namespace BookAuthor.Api.Controllers
 
                 var author = _mapper.Map<Author>(authorDto);
 
+                //automatically approve if user is an admin
                 author.Approved = await IsUserInRoles(user, "Admin");
 
                 await _unitOfWork.Authors.Add(author);
@@ -118,11 +110,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch(Exception ex)
             {
-                string message = "Internal Server Error.Please try again later";
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
 
@@ -161,11 +149,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
 
@@ -201,11 +185,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = "Internal Server Error.Please try again later";
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
 
@@ -227,11 +207,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
 
@@ -272,11 +248,7 @@ namespace BookAuthor.Api.Controllers
             }
             catch (Exception ex)
             {
-                string message = ERROR_500_MSG;
-                if (_environment.IsDevelopment()) message = ex.Message;
-
-                _logger.LogError(ex, ex.Message);
-                return StatusCode(500, message);
+                return LogServerError(ex);
             }
         }
     }

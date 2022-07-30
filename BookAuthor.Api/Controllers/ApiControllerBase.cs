@@ -47,5 +47,13 @@ namespace BookAuthor.Api.Controllers
             }
             return true;
         }
+        protected IActionResult LogServerError(Exception ex)
+        {
+            string message = ERROR_500_MSG;
+            if (_environment.IsDevelopment()) message = ex.Message;
+
+            _logger.LogError(ex, ex.Message);
+            return StatusCode(500, message);
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using BookAuthor.Api.Util.Attributes;
+using System.ComponentModel.DataAnnotations;
 
 namespace BookAuthor.Api.Model.DTO
 {
@@ -19,12 +20,22 @@ namespace BookAuthor.Api.Model.DTO
     {
         [Required]
         [StringLength(maximumLength: 100, ErrorMessage = "Name is over the limit")]
+        [NoNumbers]
         public string Name { get; set; }
+
+        [DateBeforeNow(allowNull: true)]
         public DateTime? BirthDate { get; set; }
+
+        [DateBeforeNow(allowNull: true)]
         public DateTime? DeathDate { get; set; }
+
+        [Url]
         public string ImageUrl { get; set; }
+
         public string About { get; set; }
         public string HomePlace { get; set; }
+
+        [NoNumbers]
         public string Country { get; set; }
     }
 
@@ -32,12 +43,22 @@ namespace BookAuthor.Api.Model.DTO
     {
         [Required]
         [StringLength(maximumLength: 100, ErrorMessage = "Name is over the limit")]
+        [NoNumbers]
         public string Name { get; set; }
+
+        [DateBeforeNow(allowNull: true)]
         public DateTime? BirthDate { get; set; }
+
+        [DateBeforeNow(allowNull: true)]
         public DateTime? DeathDate { get; set; }
+
+        [Url]
         public string ImageUrl { get; set; }
+
         public string About { get; set; }
         public string HomePlace { get; set; }
+
+        [NoNumbers]
         public string Country { get; set; }
     }
 
