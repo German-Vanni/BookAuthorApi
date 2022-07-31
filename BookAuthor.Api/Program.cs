@@ -1,6 +1,7 @@
 using BookAuthor.Api.Configurations;
 using BookAuthor.Api.DataAccess;
 using BookAuthor.Api.DataAccess.Repository.UnitOfWork;
+using BookAuthor.Api.Middleware;
 using BookAuthor.Api.Model;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -55,6 +56,8 @@ namespace BookAuthor.Api
                 var app = builder.Build();
 
                 // Configure the HTTP request pipeline.
+
+                app.UseMiddleware<ErrorHandlingMiddleware>();
 
                 if (app.Environment.IsDevelopment())
                 {

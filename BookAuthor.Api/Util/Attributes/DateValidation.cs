@@ -5,7 +5,7 @@ namespace BookAuthor.Api.Util.Attributes
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     sealed public class DateBeforeNowAttribute : ValidationAttribute
     {
-        bool _allowNull;
+        private readonly bool _allowNull;
         public DateBeforeNowAttribute(bool allowNull = false)
         {
             _allowNull = allowNull;

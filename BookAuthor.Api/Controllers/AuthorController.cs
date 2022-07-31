@@ -19,11 +19,11 @@ namespace BookAuthor.Api.Controllers
 
         public AuthorController(
             IWebHostEnvironment environment,
-            IUnitOfWork unitOfWork, 
-            IMapper mapper, 
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
             ILogger<AuthorController> logger,
-            UserManager<ApiUser> userManager) 
-            :base(environment, logger, userManager)
+            UserManager<ApiUser> userManager)
+            : base(environment, logger, userManager)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -34,45 +34,35 @@ namespace BookAuthor.Api.Controllers
         [HttpGet(Name = "GetAuthors")]
         public async Task<IActionResult> GetAuthors([FromQuery] RequestParameters requestParameters)
         {
-            try
-            {
-                var authors = await _unitOfWork.Authors
-                    .GetPaged(
-                    requestParameters, 
-                    a => a.Approved);
-                var authorsDtos = _mapper.Map<IEnumerable<Author>, IEnumerable<AuthorDto>>(authors);
-                return Ok(authorsDtos);
-            }
-            catch (Exception ex)
-            {
-                return LogServerError(ex);
-            }
+
+            var authors = await _unitOfWork.Authors
+                .GetPaged(
+                requestParameters,
+                a => a.Approved);
+            var authorsDtos = _mapper.Map<IEnumerable<Author>, IEnumerable<AuthorDto>>(authors);
+            return Ok(authorsDtos);
+
         }
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpGet("{id:int}", Name ="GetAuthor")]
+        [HttpGet("{id:int}", Name = "GetAuthor")]
         public async Task<IActionResult> GetAuthor(int id)
         {
-            try
-            {
-                var author = await _unitOfWork.Authors.Get(a => a.Id == id, new List<string> { "AuthorBooks.Book" });
-                if (author == null)
-                {
-                    return NotFound();
-                }
-                if (!author.Approved)
-                {
-                    return Conflict("Author is pending approval");
-                }
 
-                var authorDto = _mapper.Map<AuthorDto>(author);
-                return Ok(authorDto);
-            }
-            catch (Exception ex)
+            var author = await _unitOfWork.Authors.Get(a => a.Id == id, new List<string> { "AuthorBooks.Book" });
+            if (author == null)
             {
-                return LogServerError(ex);
+                return NotFound();
             }
+            if (!author.Approved)
+            {
+                return Conflict("Author is pending approval");
+            }
+
+            var authorDto = _mapper.Map<AuthorDto>(author);
+            return Ok(authorDto);
+
         }
 
         [Authorize]
@@ -81,7 +71,7 @@ namespace BookAuthor.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [HttpPost(Name = "CreateAuthor")]
-        public async Task<IActionResult> CreateAuthor([FromBody]AuthorDtoForCreation authorDto)
+        public async Task<IActionResult> CreateAuthor([FromBody] AuthorDtoForCreation authorDto)
         {
             ApiUser user;
 
@@ -89,29 +79,24 @@ namespace BookAuthor.Api.Controllers
             {
                 return BadRequest(ModelState);
             }
-            try
+
+            user = await GetClaimedUser();
+            if (user is null)
             {
-                user = await GetClaimedUser();
-                if (user is null)
-                {
-                    return ClaimedUserNotFound();
-                }
-
-                var author = _mapper.Map<Author>(authorDto);
-
-                //automatically approve if user is an admin
-                author.Approved = await IsUserInRoles(user, "Admin");
-
-                await _unitOfWork.Authors.Add(author);
-                await _unitOfWork.Save();
-
-                var authorResultDto = _mapper.Map<AuthorDto>(author);
-                return CreatedAtRoute("GetAuthor", new { id = author.Id }, authorResultDto);
+                return ClaimedUserNotFound();
             }
-            catch(Exception ex)
-            {
-                return LogServerError(ex);
-            }
+
+            var author = _mapper.Map<Author>(authorDto);
+
+            //automatically approve if user is an admin
+            author.Approved = await IsUserInRoles(user, "Admin");
+
+            await _unitOfWork.Authors.Add(author);
+            await _unitOfWork.Save();
+
+            var authorResultDto = _mapper.Map<AuthorDto>(author);
+            return CreatedAtRoute("GetAuthor", new { id = author.Id }, authorResultDto);
+
         }
 
         [Authorize(Roles = "Admin")]
@@ -127,34 +112,29 @@ namespace BookAuthor.Api.Controllers
             if (id == null || id < 1) return BadRequest("Author id should be defined, and have a valid value");
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            try
+
+            user = await GetClaimedUser();
+            if (user is null)
             {
-                user = await GetClaimedUser();
-                if (user is null)
-                {
-                    return ClaimedUserNotFound();
-                }
-
-                var author = await _unitOfWork.Authors.Get(a => a.Id == (int)id);
-                if (author == null)
-                {
-                    return NotFound();
-                }
-
-                _mapper.Map(authorDto, author);
-                _unitOfWork.Authors.Update(author);
-                await _unitOfWork.Save();
-
-                return NoContent();
+                return ClaimedUserNotFound();
             }
-            catch (Exception ex)
+
+            var author = await _unitOfWork.Authors.Get(a => a.Id == (int)id);
+            if (author == null)
             {
-                return LogServerError(ex);
+                return NotFound();
             }
+
+            _mapper.Map(authorDto, author);
+            _unitOfWork.Authors.Update(author);
+            await _unitOfWork.Save();
+
+            return NoContent();
+
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{id:int}", Name="DeleteAuthor")]
+        [HttpDelete("{id:int}", Name = "DeleteAuthor")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -167,26 +147,21 @@ namespace BookAuthor.Api.Controllers
             {
                 return BadRequest("Author id should be defined, and have a valid value");
             }
-            try
+
+            user = await GetClaimedUser();
+            if (user is null)
             {
-                user = await GetClaimedUser();
-                if (user is null)
-                {
-                    return ClaimedUserNotFound();
-                }
-
-                var author = await _unitOfWork.Authors.Get(a => a.Id == id);
-
-                if (author == null) return NotFound();
-
-                _unitOfWork.Books.Delete(author.Id);
-                await _unitOfWork.Save();
-                return NoContent();
+                return ClaimedUserNotFound();
             }
-            catch (Exception ex)
-            {
-                return LogServerError(ex);
-            }
+
+            var author = await _unitOfWork.Authors.Get(a => a.Id == id);
+
+            if (author == null) return NotFound();
+
+            _unitOfWork.Books.Delete(author.Id);
+            await _unitOfWork.Save();
+            return NoContent();
+
         }
 
         [HttpGet("approve", Name = "GetUnapprovedAuthors")]
@@ -194,21 +169,16 @@ namespace BookAuthor.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetUnapprovedAuthors([FromQuery] RequestParameters requestParameters)
         {
-            try
-            {
-                var authors = await _unitOfWork.Authors
-                    .GetPaged(
-                    requestParameters,
-                    a => a.Approved == false
-                    );
-                var authorDto_list = _mapper.Map<IEnumerable<Author>, IEnumerable<AuthorDto>>(authors).ToList();
 
-                return Ok(authorDto_list);
-            }
-            catch (Exception ex)
-            {
-                return LogServerError(ex);
-            }
+            var authors = await _unitOfWork.Authors
+                .GetPaged(
+                requestParameters,
+                a => a.Approved == false
+                );
+            var authorDto_list = _mapper.Map<IEnumerable<Author>, IEnumerable<AuthorDto>>(authors).ToList();
+
+            return Ok(authorDto_list);
+
         }
 
         [Authorize(Roles = "Admin")]
@@ -225,31 +195,26 @@ namespace BookAuthor.Api.Controllers
             if (id == null || id < 1) return BadRequest("Author id should be defined, and have a valid value");
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            try
+
+            user = await GetClaimedUser();
+            if (user is null)
             {
-                user = await GetClaimedUser();
-                if (user is null)
-                {
-                    return ClaimedUserNotFound();
-                }
-
-                var author = await _unitOfWork.Authors.Get(a => a.Id == (int)id);
-                if (author == null)
-                {
-                    return NotFound();
-                }
-
-                author.Approved = true;
-
-                _unitOfWork.Authors.Update(author);
-                await _unitOfWork.Save();
-
-                return Ok();
+                return ClaimedUserNotFound();
             }
-            catch (Exception ex)
+
+            var author = await _unitOfWork.Authors.Get(a => a.Id == (int)id);
+            if (author == null)
             {
-                return LogServerError(ex);
+                return NotFound();
             }
+
+            author.Approved = true;
+
+            _unitOfWork.Authors.Update(author);
+            await _unitOfWork.Save();
+
+            return Ok();
+
         }
     }
 }

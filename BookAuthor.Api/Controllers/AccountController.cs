@@ -47,8 +47,8 @@ namespace BookAuthor.Api.Controllers
                 return BadRequest(ModelState);
             }
 
-            try
-            {
+            //try
+            //{
                 var user = _mapper.Map<ApiUser>(userDto);
                 user.UserName = userDto.Email;
 
@@ -64,11 +64,11 @@ namespace BookAuthor.Api.Controllers
 
                 await _userManager.AddToRoleAsync(user, USER_ROLE_NAME);
                 return Accepted();
-            }
-            catch (Exception ex)
-            {
-                return LogServerError(ex);
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    return LogServerError(ex);
+            //}
         }
 
         [HttpPost("login")]
@@ -83,8 +83,8 @@ namespace BookAuthor.Api.Controllers
                 return BadRequest(ModelState);
             }
 
-            try
-            {
+            //try
+            //{
                 ApiUser user = await _userManager.FindByEmailAsync(userDto.Email);
                 if (user is null)
                 {
@@ -98,11 +98,11 @@ namespace BookAuthor.Api.Controllers
                 }
 
                 return Accepted(new { Token = await _authManager.CreateToken()});
-            }
-            catch (Exception ex)
-            {
-                return LogServerError(ex);
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    return LogServerError(ex);
+            //}
         }
 
     }

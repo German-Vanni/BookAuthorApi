@@ -20,77 +20,67 @@ namespace BookAuthor.Api.Controllers
         public BookController(
             IWebHostEnvironment environment,
             IUnitOfWork unitOfWork,
-            IMapper mapper, 
+            IMapper mapper,
             ILogger<BookController> logger,
-            UserManager<ApiUser> userManager) 
+            UserManager<ApiUser> userManager)
             : base(environment, logger, userManager)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
 
-        [HttpGet(Name ="GetBooks")]
+        [HttpGet(Name = "GetBooks")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetBooks([FromQuery] RequestParameters requestParameters)
         {
-            try
-            {
-                var books = await _unitOfWork.Books
-                    .GetPaged(
-                    requestParameters,
-                    b => b.Approved,
-                    includes: new List<string>
-                    {
-                        "Ratings"
-                    });
-                var bookDto_list = _mapper.Map<IEnumerable<Book>, IEnumerable<BookDto>>(books).ToList();
-                for(int i = 0; i<books.Count; i++)
+
+            var books = await _unitOfWork.Books
+                .GetPaged(
+                requestParameters,
+                b => b.Approved,
+                includes: new List<string>
                 {
-                    double? ratingAverage = null;
-                    if (books[i].Ratings.Count > 0) ratingAverage = books[i].Ratings.Average(r => r.Score);
-                    bookDto_list[i].Rating = ratingAverage;
-                }
-                //as scores are between 1 and 5, if no ratings are found for this book
-                //null is asigned to it
-                return Ok(bookDto_list);
-            }
-            catch(Exception ex)
+                        "Ratings"
+                });
+            var bookDto_list = _mapper.Map<IEnumerable<Book>, IEnumerable<BookDto>>(books).ToList();
+            for (int i = 0; i < books.Count; i++)
             {
-                return LogServerError(ex);
+                double? ratingAverage = null;
+                if (books[i].Ratings.Count > 0) ratingAverage = books[i].Ratings.Average(r => r.Score);
+                bookDto_list[i].Rating = ratingAverage;
             }
+            //as scores are between 1 and 5, if no ratings are found for this book
+            //null is asigned to it
+            return Ok(bookDto_list);
+
         }
 
-        [HttpGet("{id:int}", Name ="GetBook")]
+        [HttpGet("{id:int}", Name = "GetBook")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetBook(int id)
         {
-            try
+
+            var book = await _unitOfWork.Books.Get(b => b.Id == id, new List<string> { "AuthorBooks.Author", "Ratings" });
+            if (book == null)
             {
-                var book = await _unitOfWork.Books.Get(b => b.Id == id, new List<string> { "AuthorBooks.Author", "Ratings"});
-                if(book == null)
-                {
-                    return NotFound();
-                }
-                if (!book.Approved)
-                {
-                    return Conflict("Book is pending approval");
-                }
-
-                var bookDto = _mapper.Map<BookDto>(book);
-
-                double? ratingAverage = null;
-                if(book.Ratings.Count > 0) ratingAverage = book.Ratings.Average(r => r.Score);
-                bookDto.Rating = ratingAverage;
-
-                return Ok(bookDto);
+                return NotFound();
             }
-            catch (Exception ex)
+            if (!book.Approved)
             {
-                return LogServerError(ex);
+                return Conflict("Book is pending approval");
             }
+
+            var bookDto = _mapper.Map<BookDto>(book);
+
+            double? ratingAverage = null;
+            if (book.Ratings.Count > 0) ratingAverage = book.Ratings.Average(r => r.Score);
+            bookDto.Rating = ratingAverage;
+
+            return Ok(bookDto);
+
         }
         [Authorize]
         [ProducesResponseType(StatusCodes.Status201Created)]
@@ -105,56 +95,51 @@ namespace BookAuthor.Api.Controllers
             {
                 return BadRequest(ModelState);
             }
-            try
+
+            user = await GetClaimedUser();
+            if (user is null)
             {
-                user = await GetClaimedUser();
-                if(user is null)
-                {
-                    return ClaimedUserNotFound();
-                }
-
-                var book = _mapper.Map<Book>(bookDto);
-
-                if(bookDto.AuthorIds is null || bookDto.AuthorIds.Count == 0)
-                {
-                    return BadRequest("A book  should have atleast one author (authorIds is empty");
-                }
-
-                book.AuthorBooks = new List<AuthorBook>();
-                List<Author> authorsForResultMapping = new();
-                foreach (int id in bookDto.AuthorIds)
-                {
-                    var author = await _unitOfWork.Authors.Get(a => a.Id == id);
-                    if (author == null) return BadRequest($"AuthorId {id} does not exists");
-                    authorsForResultMapping.Add(author);
-
-                    book.AuthorBooks.Add(new AuthorBook { AuthorId = author.Id, Book = book });
-                }
-
-                //automatically approve if user is an admin
-                book.Approved = await IsUserInRoles(user, "Admin");
-
-                await _unitOfWork.Books.Add(book);
-                foreach(var ab in book.AuthorBooks)
-                {
-                    await _unitOfWork.AuthorBooks.Add(ab);
-                }
-                await _unitOfWork.Save();
-
-                var bookResultDto = _mapper.Map<BookDto>(book);
-                bookResultDto.Authors = new List<AuthorDtoForNesting>();
-                foreach(var a in authorsForResultMapping)
-                {
-                    var nestedAuthor = _mapper.Map<AuthorDtoForNesting>(a);
-                    bookResultDto.Authors.Add(nestedAuthor);
-                }
-                
-                return CreatedAtRoute("GetBook", new { id = book.Id }, bookResultDto);
+                return ClaimedUserNotFound();
             }
-            catch(Exception ex)
+
+            var book = _mapper.Map<Book>(bookDto);
+
+            if (bookDto.AuthorIds is null || bookDto.AuthorIds.Count == 0)
             {
-                return LogServerError(ex);
+                return BadRequest("A book  should have atleast one author (authorIds is empty");
             }
+
+            book.AuthorBooks = new List<AuthorBook>();
+            List<Author> authorsForResultMapping = new();
+            foreach (int id in bookDto.AuthorIds)
+            {
+                var author = await _unitOfWork.Authors.Get(a => a.Id == id);
+                if (author == null) return BadRequest($"AuthorId {id} does not exists");
+                authorsForResultMapping.Add(author);
+
+                book.AuthorBooks.Add(new AuthorBook { AuthorId = author.Id, Book = book });
+            }
+
+            //automatically approve if user is an admin
+            book.Approved = await IsUserInRoles(user, "Admin");
+
+            await _unitOfWork.Books.Add(book);
+            foreach (var ab in book.AuthorBooks)
+            {
+                await _unitOfWork.AuthorBooks.Add(ab);
+            }
+            await _unitOfWork.Save();
+
+            var bookResultDto = _mapper.Map<BookDto>(book);
+            bookResultDto.Authors = new List<AuthorDtoForNesting>();
+            foreach (var a in authorsForResultMapping)
+            {
+                var nestedAuthor = _mapper.Map<AuthorDtoForNesting>(a);
+                bookResultDto.Authors.Add(nestedAuthor);
+            }
+
+            return CreatedAtRoute("GetBook", new { id = book.Id }, bookResultDto);
+
         }
 
         [Authorize(Roles = "Admin")]
@@ -162,7 +147,7 @@ namespace BookAuthor.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [HttpPut("{id:int}", Name ="UpdateBook")]
+        [HttpPut("{id:int}", Name = "UpdateBook")]
         public async Task<IActionResult> UpdateBook(int? id, [FromBody] BookDtoForUpdation bookDto)
         {
             ApiUser user;
@@ -170,34 +155,29 @@ namespace BookAuthor.Api.Controllers
             if (id == null || id < 1) return BadRequest("Book id should be defined, and have a valid value");
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            try
+
+            user = await GetClaimedUser();
+            if (user is null)
             {
-                user = await GetClaimedUser();
-                if (user is null)
-                {
-                    return ClaimedUserNotFound();
-                }
-
-                var book = await _unitOfWork.Books.Get(b => b.Id == (int)id);
-                if(book == null)
-                {
-                    return NotFound();
-                }
-
-                _mapper.Map(bookDto, book);
-                _unitOfWork.Books.Update(book);
-                await _unitOfWork.Save();
-
-                return NoContent();
+                return ClaimedUserNotFound();
             }
-            catch (Exception ex)
+
+            var book = await _unitOfWork.Books.Get(b => b.Id == (int)id);
+            if (book == null)
             {
-                return LogServerError(ex);
+                return NotFound();
             }
+
+            _mapper.Map(bookDto, book);
+            _unitOfWork.Books.Update(book);
+            await _unitOfWork.Save();
+
+            return NoContent();
+
         }
 
-        [Authorize(Roles="Admin")]
-        [HttpDelete("{id:int}", Name="DeleteBook")]
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("{id:int}", Name = "DeleteBook")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -210,26 +190,21 @@ namespace BookAuthor.Api.Controllers
             {
                 return BadRequest("Book id should be defined, and have a valid value");
             }
-            try
+
+            user = await GetClaimedUser();
+            if (user is null)
             {
-                user = await GetClaimedUser();
-                if (user is null)
-                {
-                    return ClaimedUserNotFound();
-                }
-
-                var book = await _unitOfWork.Books.Get(b => b.Id == id);
-
-                if (book == null) return NotFound();
-
-                _unitOfWork.Books.Delete(book.Id);
-                await _unitOfWork.Save();
-                return Ok();
+                return ClaimedUserNotFound();
             }
-            catch (Exception ex)
-            {
-                return LogServerError(ex);
-            }
+
+            var book = await _unitOfWork.Books.Get(b => b.Id == id);
+
+            if (book == null) return NotFound();
+
+            _unitOfWork.Books.Delete(book.Id);
+            await _unitOfWork.Save();
+            return Ok();
+
         }
 
         [Authorize]
@@ -239,7 +214,7 @@ namespace BookAuthor.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> RateBook(int? id,[FromBody] RateBookDto rateBookDto)
+        public async Task<IActionResult> RateBook(int? id, [FromBody] RateBookDto rateBookDto)
         {
             ApiUser user;
 
@@ -247,78 +222,68 @@ namespace BookAuthor.Api.Controllers
             {
                 return BadRequest("Book id should be defined, and have a valid value");
             }
-            try
+
+            user = await GetClaimedUser();
+            if (user is null)
             {
-                user = await GetClaimedUser();
-                if (user is null)
-                {
-                    return ClaimedUserNotFound();
-                }
+                return ClaimedUserNotFound();
+            }
 
-                var book = await _unitOfWork.Books.Get(b => b.Id == id, includes: new List<string> { "Ratings" });
+            var book = await _unitOfWork.Books.Get(b => b.Id == id, includes: new List<string> { "Ratings" });
 
-                if (book == null) return NotFound();
+            if (book == null) return NotFound();
 
-                if (!book.Approved)
-                {
-                    return Conflict("Book is pending approval");
-                }
+            if (!book.Approved)
+            {
+                return Conflict("Book is pending approval");
+            }
 
-                BookScore bookScoreOfUser = await _unitOfWork.Ratings
-                    .Get(r => r.UserId == user.Id && r.BookId == book.Id);
+            BookScore bookScoreOfUser = await _unitOfWork.Ratings
+                .Get(r => r.UserId == user.Id && r.BookId == book.Id);
 
-                if (bookScoreOfUser != null)
-                {
-                    bookScoreOfUser.Score = rateBookDto.Score;
-                    _unitOfWork.Ratings.Update(bookScoreOfUser);
-                    await _unitOfWork.Save();
-                    return Ok();
-                }
-
-                bookScoreOfUser = new BookScore()
-                {
-                    Score = rateBookDto.Score,
-                    BookId = book.Id,
-                    UserId = user.Id
-                };
-
-                await _unitOfWork.Ratings.Add(bookScoreOfUser);
+            if (bookScoreOfUser != null)
+            {
+                bookScoreOfUser.Score = rateBookDto.Score;
+                _unitOfWork.Ratings.Update(bookScoreOfUser);
                 await _unitOfWork.Save();
                 return Ok();
             }
-            catch (Exception ex)
+
+            bookScoreOfUser = new BookScore()
             {
-                return LogServerError(ex);
-            }
+                Score = rateBookDto.Score,
+                BookId = book.Id,
+                UserId = user.Id
+            };
+
+            await _unitOfWork.Ratings.Add(bookScoreOfUser);
+            await _unitOfWork.Save();
+            return Ok();
+
         }
         [Authorize(Roles = "Admin")]
-        [HttpGet("approve",Name = "GetUnapprovedBooks")]
+        [HttpGet("approve", Name = "GetUnapprovedBooks")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetUnapprovedBooks([FromQuery] RequestParameters requestParameters)
         {
             ApiUser user;
-            try
-            {
-                user = await GetClaimedUser();
-                if (user is null)
-                {
-                    return ClaimedUserNotFound();
-                }
 
-                var books = await _unitOfWork.Books
-                    .GetPaged(
-                    requestParameters,
-                    b => b.Approved == false
-                    );
-                var bookDto_list = _mapper.Map<IEnumerable<Book>, IEnumerable<BookDto>>(books).ToList();
-                
-                return Ok(bookDto_list);
-            }
-            catch (Exception ex)
+            user = await GetClaimedUser();
+            if (user is null)
             {
-                return LogServerError(ex);
+                return ClaimedUserNotFound();
             }
+
+            var books = await _unitOfWork.Books
+                .GetPaged(
+                requestParameters,
+                b => b.Approved == false
+                );
+            var bookDto_list = _mapper.Map<IEnumerable<Book>, IEnumerable<BookDto>>(books).ToList();
+
+            return Ok(bookDto_list);
+
         }
 
         [Authorize(Roles = "Admin")]
@@ -335,31 +300,26 @@ namespace BookAuthor.Api.Controllers
             if (id == null || id < 1) return BadRequest("Book id should be defined, and have a valid value");
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            try
+
+            user = await GetClaimedUser();
+            if (user is null)
             {
-                user = await GetClaimedUser();
-                if (user is null)
-                {
-                    return ClaimedUserNotFound();
-                }
-
-                var book = await _unitOfWork.Books.Get(a => a.Id == (int)id);
-                if (book == null)
-                {
-                    return NotFound();
-                }
-
-                book.Approved = true;
-
-                _unitOfWork.Books.Update(book);
-                await _unitOfWork.Save();
-
-                return Ok();
+                return ClaimedUserNotFound();
             }
-            catch (Exception ex)
+
+            var book = await _unitOfWork.Books.Get(a => a.Id == (int)id);
+            if (book == null)
             {
-                return LogServerError(ex);
+                return NotFound();
             }
+
+            book.Approved = true;
+
+            _unitOfWork.Books.Update(book);
+            await _unitOfWork.Save();
+
+            return Ok();
+
         }
     }
 }
