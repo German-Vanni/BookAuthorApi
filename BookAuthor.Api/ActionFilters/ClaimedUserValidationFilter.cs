@@ -6,12 +6,14 @@ using System.Security.Claims;
 
 namespace BookAuthor.Api.ActionFilters
 {
-    public class ValidationFilterAttribute : IAsyncActionFilter
+    // we need to actually check if a claimed user STILL exist in the users db
+    // if a user account is deleted, the jwt still is valid for further requests
+    public class ClaimedUserValidationFilterAttribute : IAsyncActionFilter
     {
         private readonly UserManager<ApiUser> _userManager;
-        private readonly ILogger<ValidationFilterAttribute> _logger;
+        private readonly ILogger<ClaimedUserValidationFilterAttribute> _logger;
 
-        public ValidationFilterAttribute(UserManager<ApiUser> userManager, ILogger<ValidationFilterAttribute> logger)
+        public ClaimedUserValidationFilterAttribute(UserManager<ApiUser> userManager, ILogger<ClaimedUserValidationFilterAttribute> logger)
         {
             _userManager = userManager;
             _logger = logger;

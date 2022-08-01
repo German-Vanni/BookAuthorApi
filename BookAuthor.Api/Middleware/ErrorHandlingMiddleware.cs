@@ -10,8 +10,6 @@ namespace BookAuthor.Api.Middleware
         private readonly ILoggerFactory _loggerFactory;
         const string _ERROR_500_MSG = "Internal Server Error. Please try again later!";
 
-        public object HtppStatusCode { get; private set; }
-
         public ErrorHandlingMiddleware(RequestDelegate next, ILoggerFactory loggerFactory)
         {
             _next = next;
@@ -39,22 +37,25 @@ namespace BookAuthor.Api.Middleware
         )
         {
             _logger.LogError(ex.Message);
-            string message;
+            string message = "An error has occured";
             int statusCode;
+            List<ErrorContainer> errorList = null;
 
+            if (ex.Message != null && ex.Message != "") message = ex.Message;
             switch (ex)
             {
                 case EntityNotFoundException e:
-                    message = e.Message;
                     statusCode = (int) HttpStatusCode.NotFound;
                     break;
                 case ConflictEntityException e:
-                    message = e.Message;
                     statusCode = (int)HttpStatusCode.Conflict;
                     break;
                 case UnauthorizedUserException e:
-                    message = e.Message;
                     statusCode = (int)HttpStatusCode.Unauthorized;
+                    break;
+                case AccountException e:
+                    errorList = e.Errors is not null ? e.Errors : null;
+                    statusCode = (int)HttpStatusCode.BadRequest;
                     break;
                 default:
                     if (environment.IsDevelopment()) message = ex.Message;
@@ -62,12 +63,21 @@ namespace BookAuthor.Api.Middleware
                     statusCode = (int) HttpStatusCode.InternalServerError; ;
                     break;
             }
+            string jsonResult;
 
-
-            var jsonResult = JsonConvert.SerializeObject(new
+            if(errorList != null && errorList.Count > 0)
             {
-                error = message
-            });
+                jsonResult = JsonConvert.SerializeObject(new { 
+                    error = message,
+                    errorList =  errorList,
+                });
+            } else
+            {
+                jsonResult =JsonConvert.SerializeObject(new
+                {
+                    error = message
+                });
+            }
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = statusCode;
 

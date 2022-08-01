@@ -2,6 +2,7 @@
 using BookAuthor.Api.DataAccess;
 using BookAuthor.Api.DataAccess.Repository.UnitOfWork;
 using BookAuthor.Api.Model;
+using BookAuthor.Api.Services.AccountService;
 using BookAuthor.Api.Services.AuthManager;
 using BookAuthor.Api.Services.AuthorService;
 using BookAuthor.Api.Services.BookService;
@@ -21,7 +22,7 @@ namespace BookAuthor.Api.Configurations
                     opt.User.RequireUniqueEmail = true;
                     opt.Password.RequireNonAlphanumeric = false;
                     opt.Password.RequireDigit = false;
-                    opt.Password.RequireUppercase = false;
+                    opt.Password.RequireUppercase = true;
                 }
             );
             identityBuilder = new IdentityBuilder(identityBuilder.UserType, typeof(IdentityRole), services);
@@ -35,8 +36,10 @@ namespace BookAuthor.Api.Configurations
             services.AddScoped<IAuthManager, AuthManager>();
             services.AddTransient<IBookService, BookService>();
             services.AddTransient<IAuthorService, AuthorService>();
+            services.AddTransient<IAccountService, AccountService>();
 
-            services.AddScoped<ValidationFilterAttribute>();
+
+            services.AddScoped<ClaimedUserValidationFilterAttribute>();
 
         }
 

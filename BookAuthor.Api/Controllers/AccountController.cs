@@ -2,6 +2,7 @@
 using BookAuthor.Api.DataAccess.Repository.UnitOfWork;
 using BookAuthor.Api.Model;
 using BookAuthor.Api.Model.DTO;
+using BookAuthor.Api.Services.AccountService;
 using BookAuthor.Api.Services.AuthManager;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -13,26 +14,15 @@ namespace BookAuthor.Api.Controllers
     [ApiController]
     public class AccountController : ApiControllerBase<AccountController>
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
-        private readonly IAuthManager _authManager;
-
-        private readonly string USER_ROLE_NAME;
+        private readonly IAccountService _accountService;
         public AccountController(
             IWebHostEnvironment environment,
-            IConfiguration configuration,
             ILogger<AccountController> logger,
-            IMapper mapper,
-            IUnitOfWork unitOfWork,
-            IAuthManager authManager, 
-            UserManager<ApiUser> userManager
-            ): base(environment, logger, userManager)
+            UserManager<ApiUser> userManager,
+            IAccountService accountService
+            ) : base(environment, logger, userManager)
         {
-            _mapper = mapper;
-            _unitOfWork = unitOfWork;
-            _authManager = authManager;
-
-            USER_ROLE_NAME = configuration.GetSection("Roles").GetSection("User").GetSection("Name").Value;
+            _accountService = accountService;
         }
 
         [HttpPost("register")]
@@ -47,28 +37,10 @@ namespace BookAuthor.Api.Controllers
                 return BadRequest(ModelState);
             }
 
-            //try
-            //{
-                var user = _mapper.Map<ApiUser>(userDto);
-                user.UserName = userDto.Email;
+            await _accountService.Register(userDto);
 
-                var identityResult = await _userManager.CreateAsync(user, userDto.Password);
-                if (!identityResult.Succeeded)
-                {
-                    foreach(var e in identityResult.Errors.ToList())
-                    {
-                        ModelState.AddModelError(e.Code, e.Description);
-                    }
-                    return BadRequest(ModelState);
-                }
+            return Accepted();
 
-                await _userManager.AddToRoleAsync(user, USER_ROLE_NAME);
-                return Accepted();
-            //}
-            //catch (Exception ex)
-            //{
-            //    return LogServerError(ex);
-            //}
         }
 
         [HttpPost("login")]
@@ -83,26 +55,10 @@ namespace BookAuthor.Api.Controllers
                 return BadRequest(ModelState);
             }
 
-            //try
-            //{
-                ApiUser user = await _userManager.FindByEmailAsync(userDto.Email);
-                if (user is null)
-                {
-                    _logger.LogInformation("User with Email: {0} was not found", userDto.Email);
-                    return Unauthorized("Invalid sign in credentials");
-                }
+            string token = await _accountService.Login(userDto);
 
-                if (!await _authManager.ValidateUser(userDto))
-                {
-                    return Unauthorized("Invalid sign in credentials");
-                }
+            return Accepted(new { Token = token });
 
-                return Accepted(new { Token = await _authManager.CreateToken()});
-            //}
-            //catch (Exception ex)
-            //{
-            //    return LogServerError(ex);
-            //}
         }
 
     }
