@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using BookAuthor.Api.Exceptions;
+using Newtonsoft.Json;
 using System.Net;
 
 namespace BookAuthor.Api.Middleware
@@ -8,6 +9,8 @@ namespace BookAuthor.Api.Middleware
         private readonly RequestDelegate _next;
         private readonly ILoggerFactory _loggerFactory;
         const string _ERROR_500_MSG = "Internal Server Error. Please try again later!";
+
+        public object HtppStatusCode { get; private set; }
 
         public ErrorHandlingMiddleware(RequestDelegate next, ILoggerFactory loggerFactory)
         {
@@ -36,16 +39,33 @@ namespace BookAuthor.Api.Middleware
         )
         {
             _logger.LogError(ex.Message);
-            string message = _ERROR_500_MSG;
-            if (environment.IsDevelopment()) message = ex.Message;
+            string message;
+            int statusCode;
 
-            var code = HttpStatusCode.InternalServerError;
+            switch (ex)
+            {
+                case EntityNotFoundException e:
+                    message = e.Message;
+                    statusCode = (int) HttpStatusCode.NotFound;
+                    break;
+                case ConflictEntityException e:
+                    message = e.Message;
+                    statusCode = (int)HttpStatusCode.Conflict;
+                    break;
+                default:
+                    if (environment.IsDevelopment()) message = ex.Message;
+                    else message = _ERROR_500_MSG;
+                    statusCode = (int) HttpStatusCode.InternalServerError; ;
+                    break;
+            }
+
+
             var jsonResult = JsonConvert.SerializeObject(new
             {
                 error = message
             });
             context.Response.ContentType = "application/json";
-            context.Response.StatusCode = (int)code;
+            context.Response.StatusCode = statusCode;
 
             return context.Response.WriteAsync(jsonResult);
         }

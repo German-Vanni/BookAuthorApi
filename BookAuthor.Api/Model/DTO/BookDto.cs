@@ -49,7 +49,7 @@ namespace BookAuthor.Api.Model.DTO
         [Range(1, 5000)]
         public int? PageCount { get; set; }
 
-        [DateBeforeNow(allowNull: true)]
+        [DateBeforeNow]
         public DateTime? PublicationDate { get; set; }
 
         [StringLength(maximumLength: 512)]
@@ -77,7 +77,7 @@ namespace BookAuthor.Api.Model.DTO
         [Range(1, 5000, ErrorMessage = "Should be a valid positive integer")]
         public int PageCount { get; set; }
 
-        [DateBeforeNow(allowNull: true)]
+        [DateBeforeNow]
         public DateTime? PublicationDate { get; set; }
 
         [StringLength(maximumLength: 512)]

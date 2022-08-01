@@ -15,7 +15,7 @@ namespace BookAuthor.Api.DataAccess.Repository.Interface
                 List<string> includes = null
             );
         Task<IPagedList<T>> GetPaged(
-                RequestParameters requestParameters,
+                int pageNumber, int pageSize,
                 Expression<Func<T, bool>> expression = null,
                 List<string> includes = null
             );

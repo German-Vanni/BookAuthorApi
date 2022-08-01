@@ -3,6 +3,7 @@ using BookAuthor.Api.DataAccess.Repository.UnitOfWork;
 using BookAuthor.Api.Model;
 using BookAuthor.Api.Model.DTO;
 using BookAuthor.Api.Model.Paging;
+using BookAuthor.Api.Services.AuthorService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -14,17 +15,20 @@ namespace BookAuthor.Api.Controllers
     [ApiController]
     public class AuthorController : ApiControllerBase<AuthorController>
     {
+        private readonly IAuthorService _authorService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public AuthorController(
             IWebHostEnvironment environment,
+            IAuthorService authorService,
             IUnitOfWork unitOfWork,
             IMapper mapper,
             ILogger<AuthorController> logger,
             UserManager<ApiUser> userManager)
             : base(environment, logger, userManager)
         {
+            _authorService = authorService;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
@@ -35,11 +39,7 @@ namespace BookAuthor.Api.Controllers
         public async Task<IActionResult> GetAuthors([FromQuery] RequestParameters requestParameters)
         {
 
-            var authors = await _unitOfWork.Authors
-                .GetPaged(
-                requestParameters,
-                a => a.Approved);
-            var authorsDtos = _mapper.Map<IEnumerable<Author>, IEnumerable<AuthorDto>>(authors);
+            var authorsDtos = await _authorService.GetAllAuthors_Paged(requestParameters.PageNumber, requestParameters.PageSize);
             return Ok(authorsDtos);
 
         }
@@ -49,18 +49,7 @@ namespace BookAuthor.Api.Controllers
         [HttpGet("{id:int}", Name = "GetAuthor")]
         public async Task<IActionResult> GetAuthor(int id)
         {
-
-            var author = await _unitOfWork.Authors.Get(a => a.Id == id, new List<string> { "AuthorBooks.Book" });
-            if (author == null)
-            {
-                return NotFound();
-            }
-            if (!author.Approved)
-            {
-                return Conflict("Author is pending approval");
-            }
-
-            var authorDto = _mapper.Map<AuthorDto>(author);
+            var authorDto = await _authorService.GetAuthor(id);
             return Ok(authorDto);
 
         }
@@ -86,16 +75,11 @@ namespace BookAuthor.Api.Controllers
                 return ClaimedUserNotFound();
             }
 
-            var author = _mapper.Map<Author>(authorDto);
+            bool approved = await IsUserInRoles(user, "Admin");
 
-            //automatically approve if user is an admin
-            author.Approved = await IsUserInRoles(user, "Admin");
+            var authorResultDto = _authorService.CreateAuthor(authorDto, approved);
 
-            await _unitOfWork.Authors.Add(author);
-            await _unitOfWork.Save();
-
-            var authorResultDto = _mapper.Map<AuthorDto>(author);
-            return CreatedAtRoute("GetAuthor", new { id = author.Id }, authorResultDto);
+            return CreatedAtRoute("GetAuthor", new { id = authorResultDto.Id }, authorResultDto);
 
         }
 
@@ -119,15 +103,7 @@ namespace BookAuthor.Api.Controllers
                 return ClaimedUserNotFound();
             }
 
-            var author = await _unitOfWork.Authors.Get(a => a.Id == (int)id);
-            if (author == null)
-            {
-                return NotFound();
-            }
-
-            _mapper.Map(authorDto, author);
-            _unitOfWork.Authors.Update(author);
-            await _unitOfWork.Save();
+            await _authorService.UpdateAuthor((int)id, authorDto);
 
             return NoContent();
 
@@ -154,12 +130,6 @@ namespace BookAuthor.Api.Controllers
                 return ClaimedUserNotFound();
             }
 
-            var author = await _unitOfWork.Authors.Get(a => a.Id == id);
-
-            if (author == null) return NotFound();
-
-            _unitOfWork.Books.Delete(author.Id);
-            await _unitOfWork.Save();
             return NoContent();
 
         }
@@ -170,12 +140,7 @@ namespace BookAuthor.Api.Controllers
         public async Task<IActionResult> GetUnapprovedAuthors([FromQuery] RequestParameters requestParameters)
         {
 
-            var authors = await _unitOfWork.Authors
-                .GetPaged(
-                requestParameters,
-                a => a.Approved == false
-                );
-            var authorDto_list = _mapper.Map<IEnumerable<Author>, IEnumerable<AuthorDto>>(authors).ToList();
+            var authorDto_list = await _authorService.GetUnapprovedAuthors_Paged(requestParameters.PageNumber, requestParameters.PageSize);
 
             return Ok(authorDto_list);
 
@@ -201,17 +166,6 @@ namespace BookAuthor.Api.Controllers
             {
                 return ClaimedUserNotFound();
             }
-
-            var author = await _unitOfWork.Authors.Get(a => a.Id == (int)id);
-            if (author == null)
-            {
-                return NotFound();
-            }
-
-            author.Approved = true;
-
-            _unitOfWork.Authors.Update(author);
-            await _unitOfWork.Save();
 
             return Ok();
 

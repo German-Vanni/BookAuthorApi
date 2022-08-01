@@ -14,6 +14,11 @@ namespace BookAuthor.Api.Util.Attributes
 
         public override bool IsValid(object value)
         {
+            if(value is null)
+            {
+                //Required attribute should be used to ensure that value is not null
+                return true;
+            }
             string isbn = (value as string).ToUpper();
             if (_type == ISBNType.ISBN10 && isbn.Length != 10 || _type == ISBNType.ISBN13 && isbn.Length != 13)
             {

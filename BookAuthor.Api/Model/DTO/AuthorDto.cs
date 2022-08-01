@@ -23,10 +23,10 @@ namespace BookAuthor.Api.Model.DTO
         [NoNumbers]
         public string Name { get; set; }
 
-        [DateBeforeNow(allowNull: true)]
+        [DateBeforeNow]
         public DateTime? BirthDate { get; set; }
 
-        [DateBeforeNow(allowNull: true)]
+        [DateBeforeNow]
         public DateTime? DeathDate { get; set; }
 
         [Url]
@@ -35,6 +35,7 @@ namespace BookAuthor.Api.Model.DTO
         public string About { get; set; }
         public string HomePlace { get; set; }
 
+        [Required]
         [NoNumbers]
         public string Country { get; set; }
     }
@@ -46,10 +47,10 @@ namespace BookAuthor.Api.Model.DTO
         [NoNumbers]
         public string Name { get; set; }
 
-        [DateBeforeNow(allowNull: true)]
+        [DateBeforeNow]
         public DateTime? BirthDate { get; set; }
 
-        [DateBeforeNow(allowNull: true)]
+        [DateBeforeNow]
         public DateTime? DeathDate { get; set; }
 
         [Url]

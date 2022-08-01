@@ -80,7 +80,7 @@ namespace BookAuthor.Api.DataAccess.Repository
         }
 
         public async Task<IPagedList<T>> GetPaged(
-            RequestParameters requestParameters,
+            int pageNumber, int pageSize,
             Expression<Func<T, bool>> expression = null,
             List<string> includes = null)
         {
@@ -101,7 +101,7 @@ namespace BookAuthor.Api.DataAccess.Repository
             }
 
 
-            return await query.AsNoTracking().ToPagedListAsync(requestParameters.PageNumber, requestParameters.PageSize);
+            return await query.AsNoTracking().ToPagedListAsync(pageNumber, pageSize);
         }
 
         public void Update(T entity)

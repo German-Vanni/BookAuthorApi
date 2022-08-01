@@ -5,10 +5,8 @@ namespace BookAuthor.Api.Util.Attributes
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     sealed public class DateBeforeNowAttribute : ValidationAttribute
     {
-        private readonly bool _allowNull;
-        public DateBeforeNowAttribute(bool allowNull = false)
+        public DateBeforeNowAttribute()
         {
-            _allowNull = allowNull;
             ErrorMessage = "Future dates are not allowed";
         }
 
@@ -16,7 +14,8 @@ namespace BookAuthor.Api.Util.Attributes
         {
             if (value is null)
             {
-                return _allowNull;
+                //Required attribute should be used to ensure that value is not null
+                return true;
             }
 
             DateTime dateValue = (DateTime)value; 

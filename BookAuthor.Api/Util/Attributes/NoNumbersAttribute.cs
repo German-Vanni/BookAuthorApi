@@ -12,6 +12,11 @@ namespace BookAuthor.Api.Util.Attributes
 
         public override bool IsValid(object value)
         {
+            if (value is null)
+            {
+                //Required attribute should be used to ensure that value is not null
+                return true;
+            }
             string text = value as string;
             return !text.Any(c => char.IsDigit(c));
         }

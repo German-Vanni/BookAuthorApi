@@ -2,6 +2,8 @@
 using BookAuthor.Api.DataAccess.Repository.UnitOfWork;
 using BookAuthor.Api.Model;
 using BookAuthor.Api.Services.AuthManager;
+using BookAuthor.Api.Services.AuthorService;
+using BookAuthor.Api.Services.BookService;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
@@ -30,6 +32,9 @@ namespace BookAuthor.Api.Configurations
             services.AddTransient<IUnitOfWork, UnitOfWork>();
             services.AddAutoMapper(typeof(MapperInit));
             services.AddScoped<IAuthManager, AuthManager>();
+            services.AddTransient<IBookService, BookService>();
+            services.AddTransient<IAuthorService, AuthorService>();
+
         }
 
         public static void ConfigureJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
