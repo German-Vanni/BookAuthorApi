@@ -52,6 +52,10 @@ namespace BookAuthor.Api.Middleware
                     message = e.Message;
                     statusCode = (int)HttpStatusCode.Conflict;
                     break;
+                case UnauthorizedUserException e:
+                    message = e.Message;
+                    statusCode = (int)HttpStatusCode.Unauthorized;
+                    break;
                 default:
                     if (environment.IsDevelopment()) message = ex.Message;
                     else message = _ERROR_500_MSG;

@@ -1,4 +1,5 @@
-﻿using BookAuthor.Api.DataAccess;
+﻿using BookAuthor.Api.ActionFilters;
+using BookAuthor.Api.DataAccess;
 using BookAuthor.Api.DataAccess.Repository.UnitOfWork;
 using BookAuthor.Api.Model;
 using BookAuthor.Api.Services.AuthManager;
@@ -34,6 +35,8 @@ namespace BookAuthor.Api.Configurations
             services.AddScoped<IAuthManager, AuthManager>();
             services.AddTransient<IBookService, BookService>();
             services.AddTransient<IAuthorService, AuthorService>();
+
+            services.AddScoped<ValidationFilterAttribute>();
 
         }
 

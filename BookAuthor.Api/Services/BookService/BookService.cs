@@ -118,7 +118,7 @@ namespace BookAuthor.Api.Services.BookService
             var book = await _unitOfWork.Books.Get(b => b.Id == id, new List<string> { "AuthorBooks.Author", "Ratings" });
             if (book == null)
             {
-                throw new EntityNotFoundException();
+                throw new EntityNotFoundException("Book does not exist");
             }
 
             if (!book.Approved)

@@ -52,7 +52,7 @@ namespace BookAuthor.Api.Services.AuthorService
             var author = await _unitOfWork.Authors.Get(a => a.Id == authorId);
             if (author == null)
             {
-                throw new EntityNotFoundException();
+                throw new EntityNotFoundException("Author does not exist");
             }
 
             _mapper.Map(authorDto, author);
@@ -68,7 +68,7 @@ namespace BookAuthor.Api.Services.AuthorService
 
             if (author == null)
             {
-                throw new EntityNotFoundException();
+                throw new EntityNotFoundException("Author does not exist");
             }
 
             _unitOfWork.Books.Delete(author.Id);
@@ -106,7 +106,7 @@ namespace BookAuthor.Api.Services.AuthorService
             var author = await _unitOfWork.Authors.Get(a => a.Id == (int)id);
             if (author == null)
             {
-                throw new EntityNotFoundException();
+                throw new EntityNotFoundException("Author does not exist");
             }
 
             author.Approved = true;

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using BookAuthor.Api.ActionFilters;
 using BookAuthor.Api.DataAccess.Repository.UnitOfWork;
 using BookAuthor.Api.Model;
 using BookAuthor.Api.Model.DTO;
@@ -15,8 +16,6 @@ namespace BookAuthor.Api.Controllers
     [ApiController]
     public class BookController : ApiControllerBase<BookController>
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
         private readonly IBookService _bookService;
 
         public BookController(
@@ -29,8 +28,6 @@ namespace BookAuthor.Api.Controllers
             : base(environment, logger, userManager)
         {
             _bookService = bookService;
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
         }
 
         [HttpGet(Name = "GetBooks")]
@@ -57,6 +54,7 @@ namespace BookAuthor.Api.Controllers
 
         }
         [Authorize]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -85,6 +83,7 @@ namespace BookAuthor.Api.Controllers
         }
 
         [Authorize(Roles = "Admin")]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -111,6 +110,7 @@ namespace BookAuthor.Api.Controllers
         }
 
         [Authorize(Roles = "Admin")]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
         [HttpDelete("{id:int}", Name = "DeleteBook")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -137,6 +137,7 @@ namespace BookAuthor.Api.Controllers
         }
 
         [Authorize]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
         [HttpPost("rate/{id:int}", Name = "RateBook")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status201Created)]
@@ -164,6 +165,7 @@ namespace BookAuthor.Api.Controllers
 
         }
         [Authorize(Roles = "Admin")]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
         [HttpGet("approve", Name = "GetUnapprovedBooks")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -177,11 +179,12 @@ namespace BookAuthor.Api.Controllers
                 return ClaimedUserNotFound();
             }
 
-            var books = _bookService.GetUnapprovedBooks_Paged(requestParameters.PageNumber, requestParameters.PageSize);
+            var books = await _bookService.GetUnapprovedBooks_Paged(requestParameters.PageNumber, requestParameters.PageSize);
             return Ok(books);
         }
 
         [Authorize(Roles = "Admin")]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

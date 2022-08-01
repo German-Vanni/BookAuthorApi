@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using BookAuthor.Api.ActionFilters;
 using BookAuthor.Api.DataAccess.Repository.UnitOfWork;
 using BookAuthor.Api.Model;
 using BookAuthor.Api.Model.DTO;
@@ -16,21 +17,15 @@ namespace BookAuthor.Api.Controllers
     public class AuthorController : ApiControllerBase<AuthorController>
     {
         private readonly IAuthorService _authorService;
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
 
         public AuthorController(
             IWebHostEnvironment environment,
             IAuthorService authorService,
-            IUnitOfWork unitOfWork,
-            IMapper mapper,
             ILogger<AuthorController> logger,
             UserManager<ApiUser> userManager)
             : base(environment, logger, userManager)
         {
             _authorService = authorService;
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
         }
 
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -55,6 +50,7 @@ namespace BookAuthor.Api.Controllers
         }
 
         [Authorize]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -70,20 +66,17 @@ namespace BookAuthor.Api.Controllers
             }
 
             user = await GetClaimedUser();
-            if (user is null)
-            {
-                return ClaimedUserNotFound();
-            }
 
             bool approved = await IsUserInRoles(user, "Admin");
 
-            var authorResultDto = _authorService.CreateAuthor(authorDto, approved);
+            var authorResultDto = await _authorService.CreateAuthor(authorDto, approved);
 
             return CreatedAtRoute("GetAuthor", new { id = authorResultDto.Id }, authorResultDto);
 
         }
 
         [Authorize(Roles = "Admin")]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -91,17 +84,8 @@ namespace BookAuthor.Api.Controllers
         [HttpPut("{id:int}", Name = "UpdateAuthor")]
         public async Task<IActionResult> UpdateAuthor(int? id, [FromBody] AuthorDtoForUpdation authorDto)
         {
-            ApiUser user;
-
             if (id == null || id < 1) return BadRequest("Author id should be defined, and have a valid value");
             if (!ModelState.IsValid) return BadRequest(ModelState);
-
-
-            user = await GetClaimedUser();
-            if (user is null)
-            {
-                return ClaimedUserNotFound();
-            }
 
             await _authorService.UpdateAuthor((int)id, authorDto);
 
@@ -110,6 +94,7 @@ namespace BookAuthor.Api.Controllers
         }
 
         [Authorize(Roles = "Admin")]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
         [HttpDelete("{id:int}", Name = "DeleteAuthor")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -117,18 +102,12 @@ namespace BookAuthor.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> DeleteAuthor(int? id)
         {
-            ApiUser user;
-
             if (id == null || id < 1)
             {
                 return BadRequest("Author id should be defined, and have a valid value");
             }
 
-            user = await GetClaimedUser();
-            if (user is null)
-            {
-                return ClaimedUserNotFound();
-            }
+            await _authorService.DeleteAuthor((int)id);
 
             return NoContent();
 
@@ -147,6 +126,7 @@ namespace BookAuthor.Api.Controllers
         }
 
         [Authorize(Roles = "Admin")]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -155,17 +135,11 @@ namespace BookAuthor.Api.Controllers
         [HttpPost("approve/{id:int}", Name = "ApproveAuthor")]
         public async Task<IActionResult> ApproveAuthor(int? id)
         {
-            ApiUser user;
 
             if (id == null || id < 1) return BadRequest("Author id should be defined, and have a valid value");
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-
-            user = await GetClaimedUser();
-            if (user is null)
-            {
-                return ClaimedUserNotFound();
-            }
+            await _authorService.ApproveAuthor((int)id);
 
             return Ok();
 
