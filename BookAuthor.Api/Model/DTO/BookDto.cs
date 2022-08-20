@@ -38,17 +38,21 @@ namespace BookAuthor.Api.Model.DTO
         [StringLength(maximumLength: 32768)]
         public string Title { get; set; }
 
+        [Required]
         [StringLength(10, MinimumLength = 10)]
         [ISBN(ISBNType.ISBN10)]
         public string Isbn10 { get; set; }
 
+        [Required]
         [StringLength(13, MinimumLength = 13)]
         [ISBN(ISBNType.ISBN13)]
         public string Isbn13 { get; set; }
 
+        [Required]
         [Range(1, 5000)]
         public int? PageCount { get; set; }
 
+        [Required]
         [DateBeforeNow]
         public DateTime? PublicationDate { get; set; }
 
@@ -66,17 +70,21 @@ namespace BookAuthor.Api.Model.DTO
         [StringLength(maximumLength: 32768)]
         public string Title { get; set; }
 
+        [Required]
         [StringLength(10, MinimumLength = 10)]
         [ISBN(ISBNType.ISBN10)]
         public string Isbn10 { get; set; }
 
+        [Required]
         [StringLength(13, MinimumLength = 13)]
         [ISBN(ISBNType.ISBN13)]
         public string Isbn13 { get; set; }
 
+        [Required]
         [Range(1, 5000, ErrorMessage = "Should be a valid positive integer")]
         public int PageCount { get; set; }
 
+        [Required]
         [DateBeforeNow]
         public DateTime? PublicationDate { get; set; }
 

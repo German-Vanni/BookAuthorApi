@@ -60,6 +60,7 @@ namespace BookAuthor.Api.Model.DTO
         public string HomePlace { get; set; }
 
         [NoNumbers]
+        [Required]
         public string Country { get; set; }
     }
 

@@ -6,7 +6,7 @@
         public BaseException() : base()
         {
         }
-        public BaseException(string message) : base()
+        public BaseException(string message) : base(message)
         {
         }
         public BaseException(string message, List<ErrorContainer> errors) : base(message)
