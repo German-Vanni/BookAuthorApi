@@ -28,7 +28,7 @@ namespace BookAuthor.Api
                 builder.Services.AddApiServices();
 
                 builder.Services.AddDbContext<AppDbContext>(opt =>
-                    opt.UseSqlServer(Configuration.GetConnectionString("SqlServerCS"))
+                    opt.UseNpgsql(Configuration.GetConnectionString("PostgreCS"))
                 );
 
                 builder.Services.AddAuthentication();
